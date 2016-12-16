@@ -9,11 +9,11 @@ use sdl2::keyboard::Keycode;
 
 use vec2::Vec2;
 
-const WINDOW_WIDTH: u32 = 800;
-const WINDOW_HEIGHT: u32 = 600;
+const WINDOW_WIDTH: f32 = 800.0;
+const WINDOW_HEIGHT: f32 = 600.0;
 
-const PLAYER_WIDTH: u32 = 20;
-const PLAYER_HEIGHT: u32 = 20;
+const PLAYER_WIDTH: f32 = 20.0;
+const PLAYER_HEIGHT: f32 = 20.0;
 
 const ACCELERATION: f32 = 1.0;
 const DRAG: f32 = 0.1;
@@ -22,8 +22,8 @@ const DRAG: f32 = 0.1;
 const ORIGIN_VEC: Vec2 = Vec2 { x: 0.0, y: 0.0 };
 
 struct Player {
-    width: u32,
-    height: u32,
+    width: f32,
+    height: f32,
     position: Vec2,
     velocity: Vec2,
     acceleration: Vec2
@@ -33,7 +33,7 @@ pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem.window("rust-sdl2 demo: Video", 800, 600)
+    let window = video_subsystem.window("rust-sdl2 demo: Video", 800 as u32, 600 as u32)
         .position_centered()
         .opengl()
         .build()
@@ -48,7 +48,7 @@ pub fn main() {
     let mut player = Player { 
         width: PLAYER_WIDTH,
         height: PLAYER_HEIGHT,
-        position: Vec2 { x: ((WINDOW_WIDTH / 2) - (PLAYER_WIDTH / 2)) as f32, y: ((WINDOW_HEIGHT / 2) - (PLAYER_HEIGHT / 2)) as f32 },
+        position: Vec2 { x: (WINDOW_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0), y: (WINDOW_HEIGHT / 2.0) - (PLAYER_HEIGHT / 2.0) },
         velocity: ORIGIN_VEC,
         acceleration: ORIGIN_VEC
     };
@@ -102,24 +102,45 @@ pub fn main() {
         }
 
         player.position += player.velocity;
-        if player.position.x > WINDOW_WIDTH as f32 {
-            player.position.x = 0.0;
+
+        //if player.position.x > WINDOW_WIDTH as f32 {
+        //    player.position.x = 0.0;
+        //} else if player.position.x < 0.0 {
+        //    player.position.x = WINDOW_WIDTH as f32;
+        //}
+        //if player.position.y > WINDOW_HEIGHT as f32 {
+        //    player.position.y = 0.0;
+        //} else if player.position.y < 0.0 {
+        //    player.position.y = WINDOW_HEIGHT as f32;
+        //}
+ 
+        let mut collided = false;
+        if player.position.x + player.width > WINDOW_WIDTH {
+            player.position.x = WINDOW_WIDTH - player.width;
+            collided = true;
         } else if player.position.x < 0.0 {
-            player.position.x = WINDOW_WIDTH as f32;
+            player.position.x = 0.0;
+            collided = true;
         }
-        if player.position.y > WINDOW_HEIGHT as f32 {
-            player.position.y = 0.0;
+        if player.position.y + player.height > WINDOW_HEIGHT {
+            player.position.y = WINDOW_HEIGHT - player.height;
+            collided = true;
         } else if player.position.y < 0.0 {
-            player.position.y = WINDOW_HEIGHT as f32;
+            player.position.y = 0.0;
+            collided = true;
         }
 
-        player.velocity += player.acceleration -  player.velocity * DRAG;
+        if collided {
+            player.acceleration *= -1.0;
+        }
+
+        player.velocity += player.acceleration - player.velocity * DRAG;
 
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
 
         renderer.set_draw_color(Color::RGB(255, 0, 0));
-        renderer.fill_rect(Rect::new(player.position.x as i32, player.position.y as i32, player.width, player.height)).expect("Draw didn't work");
+        renderer.fill_rect(Rect::new(player.position.x as i32, player.position.y as i32, player.width as u32, player.height as u32)).expect("Draw didn't work");
 
         renderer.present();
  
