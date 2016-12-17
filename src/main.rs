@@ -102,6 +102,8 @@ pub fn main() {
         }
         level.player.velocity += level.player.acceleration - level.player.velocity * DRAG;
 
+        //println!("Player velocity: {:?}", level.player.velocity);
+
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
 
