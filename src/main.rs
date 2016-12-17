@@ -106,10 +106,10 @@ pub fn main() {
 
         //println!("Player velocity: {:?}", level.player.velocity);
 
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
+        renderer.set_draw_color(Color::RGB(88, 110, 117));
         renderer.clear();
 
-        renderer.set_draw_color(Color::RGB(255, 255, 255));
+        renderer.set_draw_color(Color::RGB(0, 0, 0));
         for wall in &level.walls {
             renderer.fill_rect(Rect::new((wall.position.x - wall.aabb().extent_x()) as i32, (wall.position.y - wall.aabb().extent_y()) as i32, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
         }
