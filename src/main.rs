@@ -10,7 +10,7 @@ use sdl2::rect::Rect;
 use sdl2::keyboard::Keycode;
 
 use entity::{Level, make_wall};
-use collision::{Manifold, collision_manifold, resolve_collision};
+use collision::{collision_manifold, resolve_collision};
 use vec2::Vec2;
 
 const WINDOW_WIDTH: f32 = 800.0;
@@ -93,9 +93,9 @@ pub fn main() {
 
         for wall in &mut level.walls {
             match collision_manifold(level.player, *wall) {
-                Some(Manifold { normal, .. }) => {
+                Some(manifold) => {
                     //println!("Collision normal: {:?}", normal);
-                    resolve_collision(&mut level.player, wall, normal);
+                    resolve_collision(&mut level.player, wall, manifold);
                 }
                 None => {}
             }

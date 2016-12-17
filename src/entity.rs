@@ -71,7 +71,7 @@ pub fn make_player(level_width: f32, level_height: f32) -> Entity {
         velocity: vec2::ORIGIN,
         acceleration: vec2::ORIGIN,
 
-        restitution: 2.0,
+        restitution: 1.0,
         inv_mass: 1.0 / 20.0
     }
 }

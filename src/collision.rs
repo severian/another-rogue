@@ -39,10 +39,10 @@ pub fn collision_manifold(a: Entity, b: Entity) -> Option<Manifold> {
     return None;
 }
 
-pub fn resolve_collision(a: &mut Entity, b: &mut Entity, normal: Vec2) {
+pub fn resolve_collision(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
 
     let relative_velocity = b.velocity - a.velocity;
-    let velocity_along_normal = relative_velocity.dot_product(normal);
+    let velocity_along_normal = relative_velocity.dot_product(manifold.normal);
 
     //println!("Velocity along normal: {}", velocity_along_normal);
 
@@ -54,8 +54,7 @@ pub fn resolve_collision(a: &mut Entity, b: &mut Entity, normal: Vec2) {
     let e = a.restitution.min(b.restitution);
     let j = (-(1.0 + e) * velocity_along_normal) / (a.inv_mass + b.inv_mass);
     
-    let impulse = j * normal;
-
+    let impulse = j * manifold.normal;
 
     //println!("Velocity before delta: {:?}", a.velocity);
 
@@ -63,5 +62,15 @@ pub fn resolve_collision(a: &mut Entity, b: &mut Entity, normal: Vec2) {
     b.velocity += b.inv_mass * impulse;
 
     //println!("Velocity after delta: {:?}", a.velocity);
+
+    fixup_position(a, b, manifold);
+}
+
+pub fn fixup_position(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
+
+    let correction = manifold.penetration / (a.inv_mass + b.inv_mass) * manifold.normal;
+
+    a.position -= a.inv_mass * correction;
+    b.position -= b.inv_mass * correction;
 }
 
