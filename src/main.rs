@@ -38,8 +38,8 @@ pub fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
-    level.walls.push(make_wall(20.0, 20.0, Vec2::new(200.0, 200.0)));
-    level.walls.push(make_wall(20.0, 20.0, Vec2::new(400.0, 400.0)));
+    level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
+    level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
 
     'running: loop {
         for event in event_pump.poll_iter() {

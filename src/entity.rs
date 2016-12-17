@@ -36,7 +36,11 @@ pub struct Entity {
 
 impl Entity {
     pub fn aabb(self) -> AABB {
-        AABB { min: self.position, max: Vec2 { x: self.position.x + self.width, y: self.position.y + self.height } }
+        let extent = Vec2::new(self.width / 2.0, self.height / 2.0);
+        AABB { 
+            min: self.position - extent, 
+            max: self.position + extent
+        }
     }
 }
 
