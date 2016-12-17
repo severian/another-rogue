@@ -6,7 +6,7 @@ mod collision;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
-use sdl2::rect::Rect;
+use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 
 use entity::{Level, make_wall};
@@ -89,6 +89,8 @@ pub fn main() {
             }
         }
 
+        let mouse_state = event_pump.mouse_state();
+
         level.player.position += level.player.velocity;
 
         for wall in &mut level.walls {
@@ -111,6 +113,9 @@ pub fn main() {
         for wall in &level.walls {
             renderer.fill_rect(Rect::new((wall.position.x - wall.aabb().extent_x()) as i32, (wall.position.y - wall.aabb().extent_y()) as i32, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
         }
+
+        renderer.set_draw_color(Color::RGB(0, 0, 255));
+        renderer.draw_line(Point::new(level.player.position.x as i32, level.player.position.y as i32), Point::new(mouse_state.x(), mouse_state.y())).expect("Draw didn't work");
 
         renderer.set_draw_color(Color::RGB(255, 0, 0));
         renderer.fill_rect(Rect::new((level.player.position.x - level.player.aabb().extent_x()) as i32, (level.player.position.y - level.player.aabb().extent_y()) as i32, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
