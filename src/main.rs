@@ -1,33 +1,25 @@
 extern crate sdl2;
 
 mod vec2;
+mod entity;
+mod collision;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::rect::Rect;
 use sdl2::keyboard::Keycode;
 
+use entity::{Level, make_wall};
+use collision::{Manifold, collision_manifold, resolve_collision};
 use vec2::Vec2;
 
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
 
-const PLAYER_WIDTH: f32 = 20.0;
-const PLAYER_HEIGHT: f32 = 20.0;
-
 const ACCELERATION: f32 = 1.0;
 const DRAG: f32 = 0.1;
 
 
-const ORIGIN_VEC: Vec2 = Vec2 { x: 0.0, y: 0.0 };
-
-struct Player {
-    width: f32,
-    height: f32,
-    position: Vec2,
-    velocity: Vec2,
-    acceleration: Vec2
-}
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -45,13 +37,9 @@ pub fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut player = Player { 
-        width: PLAYER_WIDTH,
-        height: PLAYER_HEIGHT,
-        position: Vec2 { x: (WINDOW_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0), y: (WINDOW_HEIGHT / 2.0) - (PLAYER_HEIGHT / 2.0) },
-        velocity: ORIGIN_VEC,
-        acceleration: ORIGIN_VEC
-    };
+    let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
+    level.walls.push(make_wall(20.0, 20.0, Vec2::new(200.0, 200.0)));
+    level.walls.push(make_wall(20.0, 20.0, Vec2::new(400.0, 400.0)));
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -60,39 +48,39 @@ pub fn main() {
                     break 'running
                 },
                 Event::KeyDown { keycode: Some(keycode), repeat, .. } => {
-                    println!("KEYDOWN, repeat: {}", repeat);
+                    //println!("KEYDOWN, repeat: {}", repeat);
                     if !repeat {
                         match keycode {
                             Keycode::Right => {
-                                player.acceleration.x += ACCELERATION;
+                                level.player.acceleration.x += ACCELERATION;
                             },
                             Keycode::Left => {
-                                player.acceleration.x -= ACCELERATION;
+                                level.player.acceleration.x -= ACCELERATION;
                             },
                             Keycode::Down => {
-                                player.acceleration.y += ACCELERATION;
+                                level.player.acceleration.y += ACCELERATION;
                             },
                             Keycode::Up => {
-                                player.acceleration.y -= ACCELERATION;
+                                level.player.acceleration.y -= ACCELERATION;
                             },
                             _ => {}
                         }
                     }
                 }
                 Event::KeyUp { keycode: Some(keycode), .. } => {
-                    println!("KEYUP");
+                    //println!("KEYUP");
                     match keycode {
                         Keycode::Right => {
-                            player.acceleration.x -= ACCELERATION;
+                            level.player.acceleration.x -= ACCELERATION;
                         },
                         Keycode::Left => {
-                            player.acceleration.x += ACCELERATION;
+                            level.player.acceleration.x += ACCELERATION;
                         },
                         Keycode::Down => {
-                            player.acceleration.y -= ACCELERATION;
+                            level.player.acceleration.y -= ACCELERATION;
                         },
                         Keycode::Up => {
-                            player.acceleration.y += ACCELERATION;
+                            level.player.acceleration.y += ACCELERATION;
                         },
                         _ => {}
                     }
@@ -101,51 +89,33 @@ pub fn main() {
             }
         }
 
-        player.position += player.velocity;
+        level.player.position += level.player.velocity;
 
-        //if player.position.x > WINDOW_WIDTH as f32 {
-        //    player.position.x = 0.0;
-        //} else if player.position.x < 0.0 {
-        //    player.position.x = WINDOW_WIDTH as f32;
-        //}
-        //if player.position.y > WINDOW_HEIGHT as f32 {
-        //    player.position.y = 0.0;
-        //} else if player.position.y < 0.0 {
-        //    player.position.y = WINDOW_HEIGHT as f32;
-        //}
- 
-        let mut collided = false;
-        if player.position.x + player.width > WINDOW_WIDTH {
-            player.position.x = WINDOW_WIDTH - player.width;
-            collided = true;
-        } else if player.position.x < 0.0 {
-            player.position.x = 0.0;
-            collided = true;
+        for wall in &mut level.walls {
+            match collision_manifold(level.player, *wall) {
+                Some(Manifold { normal, .. }) => {
+                    //println!("Collision normal: {:?}", normal);
+                    resolve_collision(&mut level.player, wall, normal);
+                }
+                None => {}
+            }
         }
-        if player.position.y + player.height > WINDOW_HEIGHT {
-            player.position.y = WINDOW_HEIGHT - player.height;
-            collided = true;
-        } else if player.position.y < 0.0 {
-            player.position.y = 0.0;
-            collided = true;
-        }
-
-        if collided {
-            player.acceleration *= -1.0;
-        }
-
-        player.velocity += player.acceleration - player.velocity * DRAG;
+        level.player.velocity += level.player.acceleration - level.player.velocity * DRAG;
 
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
 
+        renderer.set_draw_color(Color::RGB(255, 255, 255));
+        for wall in &level.walls {
+            renderer.fill_rect(Rect::new((wall.position.x - wall.aabb().extent_x()) as i32, (wall.position.y - wall.aabb().extent_y()) as i32, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
+        }
+
         renderer.set_draw_color(Color::RGB(255, 0, 0));
-        renderer.fill_rect(Rect::new(player.position.x as i32, player.position.y as i32, player.width as u32, player.height as u32)).expect("Draw didn't work");
+        renderer.fill_rect(Rect::new((level.player.position.x - level.player.aabb().extent_x()) as i32, (level.player.position.y - level.player.aabb().extent_y()) as i32, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
 
         renderer.present();
  
         // println!("Ticks: {}", timer.ticks());
-        // The rest of the game loop goes here...
     }
 }
 
