@@ -3,6 +3,7 @@ extern crate sdl2;
 mod vec2;
 mod entity;
 mod collision;
+mod line;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -10,8 +11,9 @@ use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 
 use entity::{Level, make_wall};
-use collision::{collision_manifold, resolve_collision};
+use collision::{collision_manifold, resolve_collision, nearest_line_intersection};
 use vec2::Vec2;
+use line::LineSegment;
 
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
@@ -106,6 +108,22 @@ pub fn main() {
 
         //println!("Player velocity: {:?}", level.player.velocity);
 
+
+        let mouse_pos = Vec2::new(mouse_state.x() as f32, mouse_state.y() as f32);
+        let gun_line = LineSegment::new(level.player.position, mouse_pos);
+        let gun_los_end = match nearest_line_intersection(gun_line, &level.walls) {
+            Some((_, p)) => p,
+            None => mouse_pos
+        };
+        //let debug_walls = vec![*level.walls.last().unwrap()];
+        //let gun_los_end = match nearest_line_intersection(gun_line, &debug_walls) {
+        //    Some((_, p)) => {
+        //        println!("--------");
+        //        p
+        //    },
+        //    None => mouse_pos
+        //};
+
         renderer.set_draw_color(Color::RGB(88, 110, 117));
         renderer.clear();
 
@@ -115,12 +133,13 @@ pub fn main() {
         }
 
         renderer.set_draw_color(Color::RGB(0, 0, 255));
-        renderer.draw_line(Point::new(level.player.position.x as i32, level.player.position.y as i32), Point::new(mouse_state.x(), mouse_state.y())).expect("Draw didn't work");
+        renderer.draw_line(Point::new(level.player.position.x as i32, level.player.position.y as i32), Point::new(gun_los_end.x as i32, gun_los_end.y as i32)).expect("Draw didn't work");
 
         renderer.set_draw_color(Color::RGB(255, 0, 0));
         renderer.fill_rect(Rect::new((level.player.position.x - level.player.aabb().extent_x()) as i32, (level.player.position.y - level.player.aabb().extent_y()) as i32, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
 
         renderer.present();
+
  
         // println!("Ticks: {}", timer.ticks());
     }

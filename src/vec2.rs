@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign};
 
+
 pub const ORIGIN: Vec2 = Vec2 { x: 0.0, y: 0.0 };
 
 #[derive(Debug, Copy, Clone)]
@@ -15,6 +16,13 @@ impl Vec2 {
 
     pub fn dot_product(self, other: Vec2) -> f32 {
         (self.x * other.x) + (self.y * other.y)
+    }
+
+    pub fn distance(self, other: Vec2) -> f32 {
+        let dx = other.x - self.x;
+        let dy = other.y - self.y;
+
+        (dx * dx + dy * dy).sqrt()
     }
 }
 

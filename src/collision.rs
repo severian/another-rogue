@@ -1,5 +1,8 @@
+use std::f32;
+
 use vec2::Vec2;
 use entity::Entity;
+use line::LineSegment;
 
 
 #[derive(Debug, Copy, Clone)]
@@ -75,5 +78,30 @@ fn fixup_position(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
 
     a.position -= a.inv_mass * correction;
     b.position -= b.inv_mass * correction;
+}
+
+
+pub fn nearest_line_intersection(line: LineSegment, entities: &[Entity]) -> Option<(Entity, Vec2)> {
+    let mut intersection = None;
+    let mut min_distance = f32::INFINITY;
+
+    for entity in entities {
+        for side in entity.aabb().line_segments().iter() {
+            match line.intersection(*side) {
+                Some(point) => {
+                    //println!("Intersection point: {:?}", point);
+                    let distance = line.start.distance(point);
+                    if distance < min_distance {
+                        intersection = Some((*entity, point));
+                        min_distance = distance;
+                    }
+                }
+                None => {}
+            }
+        }
+    }
+    
+    //println!("Intersection: {:?}", intersection);
+    return intersection;
 }
 
