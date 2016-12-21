@@ -1,6 +1,8 @@
 use vec2;
 use vec2::Vec2;
 use aabb::AABB;
+use ray::Ray;
+use line::LineSegment;
 
 const PLAYER_WIDTH: f32 = 20.0;
 const PLAYER_HEIGHT: f32 = 20.0;
@@ -33,7 +35,8 @@ pub struct Level {
     pub width: f32,
     pub height: f32,
     pub player: Entity,
-    pub walls: Vec<Entity>
+    pub walls: Vec<Entity>,
+    pub bullets: Vec<Entity>
 }
 
 impl Level {
@@ -47,7 +50,8 @@ impl Level {
                 make_wall(WALL_THICKNESS, height - (2.0 * WALL_THICKNESS), Vec2::new(width - (WALL_THICKNESS / 2.0), height / 2.0)),
                 make_wall(width, WALL_THICKNESS, Vec2::new(width / 2.0, height - (WALL_THICKNESS / 2.0))),
                 make_wall(WALL_THICKNESS, height - (2.0 * WALL_THICKNESS), Vec2::new(WALL_THICKNESS / 2.0, height / 2.0))
-           ]
+           ],
+           bullets: vec![]
         }
     }
 }
@@ -74,6 +78,21 @@ pub fn make_wall(width: f32, height: f32, position: Vec2) -> Entity {
         acceleration: vec2::ORIGIN,
 
         restitution: 50.0,
+        inv_mass: 0.0
+    }
+}
+
+pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
+    let bullet_ray = Ray::from_segment(LineSegment::new(player.position, fired_at));
+
+    Entity {
+        width: 2.0,
+        height: 2.0,
+        position: player.position,
+        velocity: bullet_ray.direction * 10.0,
+        acceleration: vec2::ORIGIN,
+
+        restitution: 0.0,
         inv_mass: 0.0
     }
 }

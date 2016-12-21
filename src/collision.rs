@@ -127,3 +127,16 @@ pub fn nearest_ray_intersection(ray: Ray, entities: &[Entity]) -> Option<(Entity
     return intersection;
 }
 
+pub fn collision_point(entity: Entity, entities: &[Entity]) -> Option<(Entity, Vec2)> {
+    let movement_line = LineSegment::new(entity.position, entity.position + entity.velocity);
+    
+    nearest_ray_intersection(Ray::from_segment(movement_line), entities).and_then(|result| {
+        if movement_line.has_point(result.1) {
+            Some(result)
+        } else {
+            None
+        }
+    })
+
+}
+

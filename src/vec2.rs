@@ -13,6 +13,10 @@ impl Vec2 {
     pub fn new(x: f32, y: f32) -> Vec2 {
         Vec2 { x: x, y: y }
     }
+    
+    pub fn from_ints(x: i32, y: i32) -> Vec2 {
+        Vec2::new(x as f32, y as f32)
+    }
 
     pub fn dot_product(self, other: Vec2) -> f32 {
         (self.x * other.x) + (self.y * other.y)

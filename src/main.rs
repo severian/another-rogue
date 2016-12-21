@@ -1,5 +1,6 @@
 extern crate sdl2;
 
+mod sdl_interop;
 mod vec2;
 mod entity;
 mod collision;
@@ -12,8 +13,8 @@ use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 
-use entity::{Level, make_wall};
-use collision::{collision_manifold, resolve_collision, nearest_ray_intersection};
+use entity::{Level, make_wall, make_bullet};
+use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
 use vec2::Vec2;
 use line::LineSegment;
 use ray::Ray;
@@ -90,11 +91,14 @@ pub fn main() {
                         _ => {}
                     }
                 }
+                Event::MouseButtonUp { x, y, .. } => {
+                    let bullet = make_bullet(level.player, Vec2::from_ints(x, y));
+                    level.bullets.push(bullet)
+                }
                 _ => {}
             }
         }
 
-        let mouse_state = event_pump.mouse_state();
 
         level.player.position += level.player.velocity;
 
@@ -112,8 +116,17 @@ pub fn main() {
         //println!("Player velocity: {:?}", level.player.velocity);
 
 
-        let mouse_pos = Vec2::new(mouse_state.x() as f32, mouse_state.y() as f32);
-        let gun_ray = Ray::from_segment(LineSegment::new(level.player.position, mouse_pos));
+        for bullet in &mut level.bullets {
+            bullet.position += bullet.velocity;
+        }
+
+        let walls = &level.walls;
+        level.bullets.retain(|bullet| {
+            collision_point(*bullet, walls).is_none()
+        });
+
+        let mouse_state = event_pump.mouse_state();
+        let gun_ray = Ray::from_segment(LineSegment::new(level.player.position, mouse_state.into()));
         
         let gun_los_end = match nearest_ray_intersection(gun_ray, &level.walls) {
             Some((_, p)) => p,
@@ -142,16 +155,15 @@ pub fn main() {
         renderer.set_draw_color(Color::RGB(255, 0, 0));
         renderer.fill_rect(Rect::from_center(level.player.position, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
 
+        renderer.set_draw_color(Color::RGB(255, 255, 0));
+        for bullet in &level.bullets {
+            renderer.fill_rect(Rect::from_center(bullet.position, bullet.width as u32, bullet.height as u32)).expect("Draw didn't work");
+        }
+
         renderer.present();
 
  
         // println!("Ticks: {}", timer.ticks());
-    }
-}
-
-impl Into<Point> for Vec2 {
-    fn into(self) -> Point {
-        Point::new(self.x as i32, self.y as i32)
     }
 }
 
