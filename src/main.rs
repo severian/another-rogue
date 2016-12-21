@@ -133,19 +133,25 @@ pub fn main() {
 
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         for wall in &level.walls {
-            renderer.fill_rect(Rect::new((wall.position.x - wall.aabb().extent_x()) as i32, (wall.position.y - wall.aabb().extent_y()) as i32, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
+            renderer.fill_rect(Rect::from_center(wall.position, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
         }
 
         renderer.set_draw_color(Color::RGB(0, 0, 255));
-        renderer.draw_line(Point::new(level.player.position.x as i32, level.player.position.y as i32), Point::new(gun_los_end.x as i32, gun_los_end.y as i32)).expect("Draw didn't work");
+        renderer.draw_line(level.player.position.into(), gun_los_end.into()).expect("Draw didn't work");
 
         renderer.set_draw_color(Color::RGB(255, 0, 0));
-        renderer.fill_rect(Rect::new((level.player.position.x - level.player.aabb().extent_x()) as i32, (level.player.position.y - level.player.aabb().extent_y()) as i32, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
+        renderer.fill_rect(Rect::from_center(level.player.position, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
 
         renderer.present();
 
  
         // println!("Ticks: {}", timer.ticks());
+    }
+}
+
+impl Into<Point> for Vec2 {
+    fn into(self) -> Point {
+        Point::new(self.x as i32, self.y as i32)
     }
 }
 
