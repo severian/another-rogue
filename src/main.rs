@@ -4,6 +4,8 @@ mod vec2;
 mod entity;
 mod collision;
 mod line;
+mod aabb;
+mod ray;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -11,9 +13,10 @@ use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 
 use entity::{Level, make_wall};
-use collision::{collision_manifold, resolve_collision, nearest_line_intersection};
+use collision::{collision_manifold, resolve_collision, nearest_ray_intersection};
 use vec2::Vec2;
 use line::LineSegment;
+use ray::Ray;
 
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
@@ -110,18 +113,19 @@ pub fn main() {
 
 
         let mouse_pos = Vec2::new(mouse_state.x() as f32, mouse_state.y() as f32);
-        let gun_line = LineSegment::new(level.player.position, mouse_pos);
-        let gun_los_end = match nearest_line_intersection(gun_line, &level.walls) {
+        let gun_ray = Ray::from_segment(LineSegment::new(level.player.position, mouse_pos));
+        
+        let gun_los_end = match nearest_ray_intersection(gun_ray, &level.walls) {
             Some((_, p)) => p,
-            None => mouse_pos
+            None => gun_ray.origin + (800.0 * gun_ray.direction)
         };
         //let debug_walls = vec![*level.walls.last().unwrap()];
-        //let gun_los_end = match nearest_line_intersection(gun_line, &debug_walls) {
+        //let gun_los_end = match nearest_ray_intersection(gun_ray, &debug_walls) {
         //    Some((_, p)) => {
         //        println!("--------");
         //        p
         //    },
-        //    None => mouse_pos
+        //    None => gun_ray.origin + (800.0 * gun_ray.direction)
         //};
 
         renderer.set_draw_color(Color::RGB(88, 110, 117));

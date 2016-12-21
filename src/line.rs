@@ -1,3 +1,5 @@
+use std::f32;
+
 use vec2::Vec2;
 
 const INTERSECTION_EPSILON: f32 = 0.00003;
@@ -64,4 +66,5 @@ impl LineSegment {
     }
 
 }
+
 

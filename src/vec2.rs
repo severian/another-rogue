@@ -24,6 +24,15 @@ impl Vec2 {
 
         (dx * dx + dy * dy).sqrt()
     }
+    
+    pub fn magnitude(self) -> f32 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    pub fn normalize(self) -> Vec2 {
+        let m = self.magnitude();
+        Vec2::new(self.x / m, self.y / m)
+    }
 }
 
 impl Add for Vec2 {
