@@ -1,6 +1,6 @@
 use vec2;
 use vec2::Vec2;
-use aabb::AABB;
+use shape::{Shape, CollisionShape, AABB, Circle};
 use ray::Ray;
 use line::LineSegment;
 use animation::Animation;
@@ -40,8 +40,7 @@ impl Entity {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Physics {
-    pub width: f32,
-    pub height: f32,
+    pub shape: Shape,
     pub position: Vec2,
     pub velocity: Vec2,
     pub acceleration: Vec2,
@@ -51,13 +50,19 @@ pub struct Physics {
 }
 
 impl Physics {
-    pub fn aabb(self) -> AABB {
-        let extent = Vec2::new(self.width / 2.0, self.height / 2.0);
-        AABB { 
-            min: self.position - extent, 
-            max: self.position + extent
+
+    pub fn collision_shape(&self) -> CollisionShape {
+        match self.shape {
+            Shape::Rect { extent } => {
+                let half_extent = extent / 2.0;
+                CollisionShape::AABB(AABB::new(self.position - half_extent, self.position + half_extent))
+            }
+            Shape::Circle { radius } => {
+                CollisionShape::Circle(Circle::new(self.position, radius))
+            }
         }
     }
+
 }
 
 pub struct Level {
@@ -91,8 +96,8 @@ pub fn make_player(level_width: f32, level_height: f32) -> Entity {
     Entity::new(
         EntityType::Player,
         Physics {
-            width: PLAYER_WIDTH,
-            height: PLAYER_HEIGHT,
+            //shape: Shape::Rect { extent: Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT) },
+            shape: Shape::Circle { radius: PLAYER_WIDTH / 2.0 },
             position: Vec2::new(level_width / 2.0, level_height / 2.0),
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,
@@ -107,8 +112,22 @@ pub fn make_wall(width: f32, height: f32, position: Vec2) -> Entity {
     Entity::new(
         EntityType::Wall,
         Physics {
-            width: width,
-            height: height,
+            shape: Shape::Rect { extent: Vec2::new(width, height) },
+            position: position,
+            velocity: vec2::ORIGIN,
+            acceleration: vec2::ORIGIN,
+
+            restitution: 50.0,
+            inv_mass: 0.0
+        }
+    )
+}
+
+pub fn make_circle_wall(radius: f32, position: Vec2) -> Entity {
+    Entity::new(
+        EntityType::Wall,
+        Physics {
+            shape: Shape::Circle { radius: radius },
             position: position,
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,
@@ -120,13 +139,12 @@ pub fn make_wall(width: f32, height: f32, position: Vec2) -> Entity {
 }
 
 pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
-    let bullet_ray = Ray::from_segment(LineSegment::new(player.physics.position, fired_at));
+    let bullet_ray = Ray::from_segment(&LineSegment::new(player.physics.position, fired_at));
 
     Entity::new(
         EntityType::Bullet,
         Physics {
-            width: 4.0,
-            height: 4.0,
+            shape: Shape::Circle { radius: 2.0 },
             position: player.physics.position,
             velocity: bullet_ray.direction * 20.0,
             acceleration: vec2::ORIGIN,
@@ -141,8 +159,7 @@ pub fn make_animation(start_time: u32, position: Vec2) -> Entity {
     Entity::new(
         EntityType::Animation(Animation::new(start_time, 16, 250)),
         Physics {
-            width: 0.0,
-            height: 0.0,
+            shape: Shape::Circle { radius: 0.0 },
             position: position,
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,

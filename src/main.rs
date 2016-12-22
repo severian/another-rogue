@@ -5,7 +5,7 @@ mod vec2;
 mod entity;
 mod collision;
 mod line;
-mod aabb;
+mod shape;
 mod ray;
 mod animation;
 
@@ -17,7 +17,8 @@ use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
 
-use entity::{Level, make_wall, make_bullet, make_animation};
+use sdl_interop::EntityRenderer;
+use entity::{Level, make_wall, make_circle_wall, make_bullet, make_animation};
 use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
 use vec2::Vec2;
 use line::LineSegment;
@@ -52,6 +53,7 @@ pub fn main() {
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
+    //level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -110,9 +112,9 @@ pub fn main() {
         level.player.physics.position += level.player.physics.velocity;
 
         for wall in &mut level.walls {
-            match collision_manifold(level.player, *wall) {
+            match collision_manifold(&level.player, wall) {
                 Some(manifold) => {
-                    //println!("Collision normal: {:?}", normal);
+                    println!("Collision manifold: {:?}", manifold);
                     resolve_collision(&mut level.player, wall, manifold);
                 }
                 None => {}
@@ -147,9 +149,9 @@ pub fn main() {
 
 
         let mouse_state = event_pump.mouse_state();
-        let gun_ray = Ray::from_segment(LineSegment::new(level.player.physics.position, mouse_state.into()));
+        let gun_ray = Ray::from_segment(&LineSegment::new(level.player.physics.position, mouse_state.into()));
         
-        let gun_los_end = match nearest_ray_intersection(gun_ray, &level.walls) {
+        let gun_los_end = match nearest_ray_intersection(&gun_ray, &level.walls) {
             Some((_, p)) => p,
             None => gun_ray.origin + (800.0 * gun_ray.direction)
         };
@@ -167,20 +169,19 @@ pub fn main() {
 
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         for wall in &level.walls {
-            renderer.fill_rect(Rect::from_center(wall.physics.position, wall.physics.width as u32, wall.physics.height as u32)).expect("Draw didn't work");
+            renderer.draw_entity(wall, Color::RGB(0, 0, 0));
         }
 
         renderer.set_draw_color(Color::RGB(0, 0, 255));
         renderer.draw_line(level.player.physics.position.into(), gun_los_end.into()).expect("Draw didn't work");
 
-        renderer.set_draw_color(Color::RGB(255, 0, 0));
-        renderer.fill_rect(Rect::from_center(level.player.physics.position, level.player.physics.width as u32, level.player.physics.height as u32)).expect("Draw didn't work");
+        renderer.draw_entity(&level.player, Color::RGB(255, 0, 0));
 
-        renderer.set_draw_color(Color::RGB(255, 255, 0));
         for bullet in &level.bullets {
-            renderer.fill_rect(Rect::from_center(bullet.physics.position, bullet.physics.width as u32, bullet.physics.height as u32)).expect("Draw didn't work");
+            renderer.draw_entity(bullet, Color::RGB(255, 255, 0));
         }
 
+        renderer.set_draw_color(Color::RGB(255, 255, 0));
         for entity in &level.animations {
             let size = 1 * entity.animation().step(ticks);
             renderer.filled_circle(entity.physics.position.x as i16, entity.physics.position.y as i16, (size / 2) as i16, Color::RGB(255, 255, 0)).expect("Draw didn't work");

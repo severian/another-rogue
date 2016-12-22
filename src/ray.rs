@@ -2,7 +2,7 @@ use std::f32;
 
 use vec2::Vec2;
 use line::LineSegment;
-use aabb::AABB;
+use shape::AABB;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -16,11 +16,11 @@ impl Ray {
         Ray { origin: origin, direction: direction }
     }
 
-    pub fn from_segment(segment: LineSegment) -> Ray {
+    pub fn from_segment(segment: &LineSegment) -> Ray {
         Ray::new(segment.start, (segment.end - segment.start).normalize())
     }
 
-    pub fn box_intersection(self, aabb: AABB) -> Option<Vec2> {
+    pub fn box_intersection(self, aabb: &AABB) -> Option<Vec2> {
         
         let mut tmin = f32::NEG_INFINITY;
         let mut tmax = f32::INFINITY;

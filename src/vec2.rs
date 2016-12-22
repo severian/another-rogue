@@ -1,9 +1,9 @@
-use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign};
 
 
 pub const ORIGIN: Vec2 = Vec2 { x: 0.0, y: 0.0 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32
@@ -18,22 +18,26 @@ impl Vec2 {
         Vec2::new(x as f32, y as f32)
     }
 
-    pub fn dot_product(self, other: Vec2) -> f32 {
+    pub fn dot_product(&self, other: Vec2) -> f32 {
         (self.x * other.x) + (self.y * other.y)
     }
 
-    pub fn distance(self, other: Vec2) -> f32 {
+    pub fn distance(&self, other: Vec2) -> f32 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
 
         (dx * dx + dy * dy).sqrt()
     }
     
-    pub fn magnitude(self) -> f32 {
-        (self.x * self.x + self.y * self.y).sqrt()
+    pub fn magnitude_squared(&self) -> f32 {
+        self.x * self.x + self.y * self.y
     }
 
-    pub fn normalize(self) -> Vec2 {
+    pub fn magnitude(&self) -> f32 {
+        self.magnitude_squared().sqrt()
+    }
+
+    pub fn normalize(&self) -> Vec2 {
         let m = self.magnitude();
         Vec2::new(self.x / m, self.y / m)
     }
@@ -78,6 +82,20 @@ impl Mul for Vec2 {
 impl MulAssign for Vec2 {
     fn mul_assign(&mut self, rhs: Vec2) {
         *self = Vec2 { x: self.x * rhs.x, y: self.y * rhs.y }
+    }
+}
+
+impl Div<f32> for Vec2 {
+    type Output = Vec2;
+
+    fn div(self, rhs: f32) -> Vec2 {
+        Vec2::new(self.x / rhs, self.y / rhs)
+    }
+}
+
+impl DivAssign<f32> for Vec2 {
+    fn div_assign(&mut self, rhs: f32) {
+        *self = *self / rhs
     }
 }
 
