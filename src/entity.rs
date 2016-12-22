@@ -125,8 +125,8 @@ pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
     Entity::new(
         EntityType::Bullet,
         Physics {
-            width: 2.0,
-            height: 2.0,
+            width: 4.0,
+            height: 4.0,
             position: player.physics.position,
             velocity: bullet_ray.direction * 20.0,
             acceleration: vec2::ORIGIN,
