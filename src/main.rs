@@ -15,6 +15,7 @@ use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
+use sdl2::gfx::primitives::DrawRenderer;
 
 use entity::{Level, make_wall, make_bullet, make_animation};
 use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
@@ -55,7 +56,7 @@ pub fn main() {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+            Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
                 Event::KeyDown { keycode: Some(keycode), repeat, .. } => {
@@ -182,7 +183,8 @@ pub fn main() {
 
         for entity in &level.animations {
             let size = 1 * entity.animation().step(ticks);
-            renderer.fill_rect(Rect::from_center(entity.physics.position, size, size)).expect("Draw didn't work");
+            renderer.filled_circle(entity.physics.position.x as i16, entity.physics.position.y as i16, (size / 2) as i16, Color::RGB(255, 255, 0)).expect("Draw didn't work");
+            //renderer.fill_rect(Rect::from_center(entity.physics.position, size, size)).expect("Draw didn't work");
         }
 
         renderer.present();
