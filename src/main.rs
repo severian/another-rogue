@@ -53,7 +53,7 @@ pub fn main() {
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
-    //level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
+    level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -114,7 +114,7 @@ pub fn main() {
         for wall in &mut level.walls {
             match collision_manifold(&level.player, wall) {
                 Some(manifold) => {
-                    println!("Collision manifold: {:?}", manifold);
+                    //println!("Collision manifold: {:?}", manifold);
                     resolve_collision(&mut level.player, wall, manifold);
                 }
                 None => {}

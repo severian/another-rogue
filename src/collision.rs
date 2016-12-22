@@ -24,13 +24,13 @@ impl Manifold {
 pub fn collision_manifold(a: &Entity, b: &Entity) -> Option<Manifold> {
     match (a.physics.collision_shape(), b.physics.collision_shape()) {
         (CollisionShape::AABB(abox), CollisionShape::AABB(bbox)) => aabb_aabb_collision_manifold(&abox, &bbox),
+        (CollisionShape::Circle(acirc), CollisionShape::Circle(bcirc)) => circle_circle_collision_manifold(&acirc, &bcirc),
         (CollisionShape::AABB(abox), CollisionShape::Circle(bcirc)) => aabb_circle_collision_manifold(&abox, &bcirc),
         (CollisionShape::Circle(acirc), CollisionShape::AABB(bbox)) =>
             aabb_circle_collision_manifold(&bbox, &acirc).as_mut().map(|m| {
                 m.normal *= -1.0;
                 *m
-            }),
-        _ => panic!("Collision not implemented")
+            })
     }
 }
 
@@ -61,6 +61,28 @@ fn aabb_aabb_collision_manifold(a: &AABB, b: &AABB) -> Option<Manifold> {
     }
 
     return None;
+}
+
+fn circle_circle_collision_manifold(a: &Circle, b: &Circle) -> Option<Manifold> {
+    let n = b.position - a.position;
+    let r = a.radius + b.radius;
+    
+    let mut distance = n.magnitude_squared();
+
+    if distance > r * r {
+        return None;
+    }
+
+    distance = distance.sqrt();
+
+    //println!("n: {:?}, r: {}, d: {}", n, r, distance);
+
+    if distance != 0.0 {
+        Some(Manifold::new(r - distance, n / distance))
+    } else {
+        // Circles are in same position
+        Some(Manifold::new(a.radius, Vec2::new(1.0, 0.0)))
+    }
 }
 
 fn aabb_circle_collision_manifold(a: &AABB, b: &Circle) -> Option<Manifold> {
@@ -107,16 +129,16 @@ fn aabb_circle_collision_manifold(a: &AABB, b: &Circle) -> Option<Manifold> {
         return None;
     }
 
-    //println!("Normal: {:?}, n: {:?}", normal, n);
-
     distance = distance.sqrt();
+
+    //println!("Normal: {:?}, n: {:?}, distance: {}", normal, n, distance);
 
     // Collision normal needs to be flipped to point outside if circle was
     // inside the AABB
     if inside {
-        Some(Manifold::new(b.radius - distance, (normal * -1.0).normalize())) 
+        Some(Manifold::new(b.radius - distance, (normal * -1.0) / distance)) 
     } else {
-        Some(Manifold::new(b.radius - distance, normal.normalize())) 
+        Some(Manifold::new(b.radius - distance, normal / distance)) 
     }
 }
 
