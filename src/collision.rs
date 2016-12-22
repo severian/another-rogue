@@ -1,7 +1,7 @@
 use std::f32;
 
 use vec2::Vec2;
-use entity::Entity;
+use entity::{Physics, Entity};
 use line::LineSegment;
 use ray::Ray;
 
@@ -15,10 +15,10 @@ pub struct Manifold {
 // from https://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
 
 pub fn collision_manifold(a: Entity, b: Entity) -> Option<Manifold> {
-    let n = b.position - a.position;
+    let n = b.physics.position - a.physics.position;
 
-    let abox = a.aabb();
-    let bbox = b.aabb();
+    let abox = a.physics.aabb();
+    let bbox = b.physics.aabb();
 
     //println!("Normal: {:?}", n);
     //println!("A box: {:?}", abox);
@@ -44,11 +44,11 @@ pub fn collision_manifold(a: Entity, b: Entity) -> Option<Manifold> {
 }
 
 pub fn resolve_collision(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
-    resolve_bounce(a, b, manifold);
-    fixup_position(a, b, manifold);
+    resolve_bounce(&mut a.physics, &mut b.physics, manifold);
+    fixup_position(&mut a.physics, &mut b.physics, manifold);
 }
 
-fn resolve_bounce(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
+fn resolve_bounce(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
     let relative_velocity = b.velocity - a.velocity;
     let velocity_along_normal = relative_velocity.dot_product(manifold.normal);
 
@@ -73,7 +73,7 @@ fn resolve_bounce(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
 
 }
 
-fn fixup_position(a: &mut Entity, b: &mut Entity, manifold: Manifold) {
+fn fixup_position(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
 
     let correction = manifold.penetration / (a.inv_mass + b.inv_mass) * manifold.normal;
 
@@ -86,7 +86,7 @@ pub fn nearest_line_intersection(line: LineSegment, entities: &[Entity]) -> Opti
     let mut min_distance = f32::INFINITY;
 
     for entity in entities {
-        for side in entity.aabb().line_segments().iter() {
+        for side in entity.physics.aabb().line_segments().iter() {
             match line.intersection(*side) {
                 Some(point) => {
                     //println!("Intersection point: {:?}", point);
@@ -110,7 +110,7 @@ pub fn nearest_ray_intersection(ray: Ray, entities: &[Entity]) -> Option<(Entity
     let mut min_distance = f32::INFINITY;
 
     for entity in entities {
-        match ray.box_intersection(entity.aabb()) {
+        match ray.box_intersection(entity.physics.aabb()) {
             Some(point) => {
                 //println!("Intersection point: {:?}", point);
                 let distance = ray.origin.distance(point);
@@ -128,7 +128,7 @@ pub fn nearest_ray_intersection(ray: Ray, entities: &[Entity]) -> Option<(Entity
 }
 
 pub fn collision_point(entity: Entity, entities: &[Entity]) -> Option<(Entity, Vec2)> {
-    let movement_line = LineSegment::new(entity.position, entity.position + entity.velocity);
+    let movement_line = LineSegment::new(entity.physics.position, entity.physics.position + entity.physics.velocity);
     
     nearest_ray_intersection(Ray::from_segment(movement_line), entities).and_then(|result| {
         if movement_line.has_point(result.1) {

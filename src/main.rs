@@ -7,13 +7,16 @@ mod collision;
 mod line;
 mod aabb;
 mod ray;
+mod animation;
+
+use std::time::{Duration, Instant};
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 
-use entity::{Level, make_wall, make_bullet};
+use entity::{Level, make_wall, make_bullet, make_animation};
 use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
 use vec2::Vec2;
 use line::LineSegment;
@@ -41,6 +44,8 @@ pub fn main() {
 
     let mut renderer = window.renderer().present_vsync().build().unwrap();
 
+    let mut timer = sdl_context.timer().unwrap();
+
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -58,16 +63,16 @@ pub fn main() {
                     if !repeat {
                         match keycode {
                             Keycode::Right => {
-                                level.player.acceleration.x += ACCELERATION;
+                                level.player.physics.acceleration.x += ACCELERATION;
                             },
                             Keycode::Left => {
-                                level.player.acceleration.x -= ACCELERATION;
+                                level.player.physics.acceleration.x -= ACCELERATION;
                             },
                             Keycode::Down => {
-                                level.player.acceleration.y += ACCELERATION;
+                                level.player.physics.acceleration.y += ACCELERATION;
                             },
                             Keycode::Up => {
-                                level.player.acceleration.y -= ACCELERATION;
+                                level.player.physics.acceleration.y -= ACCELERATION;
                             },
                             _ => {}
                         }
@@ -77,16 +82,16 @@ pub fn main() {
                     //println!("KEYUP");
                     match keycode {
                         Keycode::Right => {
-                            level.player.acceleration.x -= ACCELERATION;
+                            level.player.physics.acceleration.x -= ACCELERATION;
                         },
                         Keycode::Left => {
-                            level.player.acceleration.x += ACCELERATION;
+                            level.player.physics.acceleration.x += ACCELERATION;
                         },
                         Keycode::Down => {
-                            level.player.acceleration.y -= ACCELERATION;
+                            level.player.physics.acceleration.y -= ACCELERATION;
                         },
                         Keycode::Up => {
-                            level.player.acceleration.y += ACCELERATION;
+                            level.player.physics.acceleration.y += ACCELERATION;
                         },
                         _ => {}
                     }
@@ -99,8 +104,9 @@ pub fn main() {
             }
         }
 
+        let ticks = timer.ticks();
 
-        level.player.position += level.player.velocity;
+        level.player.physics.position += level.player.physics.velocity;
 
         for wall in &mut level.walls {
             match collision_manifold(level.player, *wall) {
@@ -111,22 +117,36 @@ pub fn main() {
                 None => {}
             }
         }
-        level.player.velocity += level.player.acceleration - level.player.velocity * DRAG;
+        level.player.physics.velocity += level.player.physics.acceleration - level.player.physics.velocity * DRAG;
 
         //println!("Player velocity: {:?}", level.player.velocity);
 
 
         for bullet in &mut level.bullets {
-            bullet.position += bullet.velocity;
+            bullet.physics.position += bullet.physics.velocity;
         }
 
-        let walls = &level.walls;
-        level.bullets.retain(|bullet| {
-            collision_point(*bullet, walls).is_none()
+        {
+            let walls = &level.walls;
+            let animations = &mut level.animations;
+            level.bullets.retain(|bullet| {
+                match collision_point(*bullet, walls) {
+                    Some((_, point)) => {
+                        animations.push(make_animation(ticks, point));
+                        false
+                    }
+                    None => true
+                }
+            });
+        }
+
+        level.animations.retain(|entity| {
+            !entity.animation().is_expired(ticks)
         });
 
+
         let mouse_state = event_pump.mouse_state();
-        let gun_ray = Ray::from_segment(LineSegment::new(level.player.position, mouse_state.into()));
+        let gun_ray = Ray::from_segment(LineSegment::new(level.player.physics.position, mouse_state.into()));
         
         let gun_los_end = match nearest_ray_intersection(gun_ray, &level.walls) {
             Some((_, p)) => p,
@@ -146,18 +166,23 @@ pub fn main() {
 
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         for wall in &level.walls {
-            renderer.fill_rect(Rect::from_center(wall.position, wall.width as u32, wall.height as u32)).expect("Draw didn't work");
+            renderer.fill_rect(Rect::from_center(wall.physics.position, wall.physics.width as u32, wall.physics.height as u32)).expect("Draw didn't work");
         }
 
         renderer.set_draw_color(Color::RGB(0, 0, 255));
-        renderer.draw_line(level.player.position.into(), gun_los_end.into()).expect("Draw didn't work");
+        renderer.draw_line(level.player.physics.position.into(), gun_los_end.into()).expect("Draw didn't work");
 
         renderer.set_draw_color(Color::RGB(255, 0, 0));
-        renderer.fill_rect(Rect::from_center(level.player.position, level.player.width as u32, level.player.height as u32)).expect("Draw didn't work");
+        renderer.fill_rect(Rect::from_center(level.player.physics.position, level.player.physics.width as u32, level.player.physics.height as u32)).expect("Draw didn't work");
 
         renderer.set_draw_color(Color::RGB(255, 255, 0));
         for bullet in &level.bullets {
-            renderer.fill_rect(Rect::from_center(bullet.position, bullet.width as u32, bullet.height as u32)).expect("Draw didn't work");
+            renderer.fill_rect(Rect::from_center(bullet.physics.position, bullet.physics.width as u32, bullet.physics.height as u32)).expect("Draw didn't work");
+        }
+
+        for entity in &level.animations {
+            let size = 1 * entity.animation().step(ticks);
+            renderer.fill_rect(Rect::from_center(entity.physics.position, size, size)).expect("Draw didn't work");
         }
 
         renderer.present();
