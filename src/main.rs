@@ -153,7 +153,7 @@ pub fn main() {
         
         let gun_los_end = match nearest_ray_intersection(&gun_ray, &level.walls) {
             Some((_, p)) => p,
-            None => gun_ray.origin + (800.0 * gun_ray.direction)
+            None => gun_ray.origin + (800.0 * gun_ray.direction).normalize()
         };
         //let debug_walls = vec![*level.walls.last().unwrap()];
         //let gun_los_end = match nearest_ray_intersection(gun_ray, &debug_walls) {
@@ -161,7 +161,7 @@ pub fn main() {
         //        println!("--------");
         //        p
         //    },
-        //    None => gun_ray.origin + (800.0 * gun_ray.direction)
+        //    None => gun_ray.origin + (800.0 * gun_ray.direction).normalize()
         //};
 
         renderer.set_draw_color(Color::RGB(88, 110, 117));

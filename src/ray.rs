@@ -17,7 +17,7 @@ impl Ray {
     }
 
     pub fn from_segment(segment: &LineSegment) -> Ray {
-        Ray::new(segment.start, (segment.end - segment.start).normalize())
+        Ray::new(segment.start, segment.end - segment.start)
     }
 
     pub fn box_intersection(self, aabb: &AABB) -> Option<Vec2> {
@@ -49,4 +49,5 @@ impl Ray {
             None
         }
     }
+
 }

@@ -146,7 +146,7 @@ pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
         Physics {
             shape: Shape::Circle { radius: 2.0 },
             position: player.physics.position,
-            velocity: bullet_ray.direction * 20.0,
+            velocity: bullet_ray.direction.normalize() * 20.0,
             acceleration: vec2::ORIGIN,
 
             restitution: 0.0,
