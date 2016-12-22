@@ -187,7 +187,7 @@ pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(Entit
     for entity in entities {
         let maybe_point = match entity.physics.collision_shape() {
             CollisionShape::AABB(aabb) => ray.box_intersection(&aabb),
-            CollisionShape::Circle(_) => None
+            CollisionShape::Circle(circle) => ray.circle_intersection(&circle)
         };
 
         match maybe_point {

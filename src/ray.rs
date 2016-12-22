@@ -2,7 +2,7 @@ use std::f32;
 
 use vec2::Vec2;
 use line::LineSegment;
-use shape::AABB;
+use shape::{AABB, Circle};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -20,7 +20,7 @@ impl Ray {
         Ray::new(segment.start, segment.end - segment.start)
     }
 
-    pub fn box_intersection(self, aabb: &AABB) -> Option<Vec2> {
+    pub fn box_intersection(&self, aabb: &AABB) -> Option<Vec2> {
         
         let mut tmin = f32::NEG_INFINITY;
         let mut tmax = f32::INFINITY;
@@ -47,6 +47,34 @@ impl Ray {
             Some(self.origin + (tmin * self.direction))
         } else {
             None
+        }
+    }
+
+    pub fn circle_intersection(&self, circle: &Circle) -> Option<Vec2> {
+        let d = self.direction;
+        let f = self.origin - circle.position;
+
+        let a = d.dot_product(d);
+        let b = 2.0 * f.dot_product(d);
+        let c = f.dot_product(f) - circle.radius * circle.radius;
+
+        let mut discriminant = b * b - 4.0 * a * c;
+        //println!("discriminant: {}", discriminant);
+        if discriminant < 0.0 {
+            None
+        } else {
+            discriminant = discriminant.sqrt();
+
+            let t1 = (-b - discriminant) / (2.0 * a);
+            let t2 = (-b + discriminant) / (2.0 * a);
+
+            let tmin = t1.min(t2);
+            //println!("tmin: {}", tmin);
+            if tmin >= 0.0 {
+                Some(self.origin + (tmin * self.direction))
+            } else {
+                None
+            }
         }
     }
 
