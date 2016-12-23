@@ -5,7 +5,7 @@ use sdl2::rect::{Rect, Point};
 use sdl2::mouse::MouseState;
 
 use vec2::Vec2;
-use entity::Entity;
+use entity::{Entity, EntityType};
 use shape::Shape;
 
 
@@ -22,12 +22,19 @@ impl Into<Vec2> for MouseState {
 }
 
 pub trait EntityRenderer {
-    fn draw_entity(&mut self, entity: &Entity, color: Color);
+    fn draw_entity(&mut self, entity: &Entity);
 }
 
 impl<'a> EntityRenderer for Renderer<'a> {
 
-    fn draw_entity(&mut self, entity: &Entity, color: Color) {
+    fn draw_entity(&mut self, entity: &Entity) {
+        let color = match entity.entity_type {
+            EntityType::Player(_) => Color::RGB(255, 0, 0),
+            EntityType::Wall => Color::RGB(0, 0, 0),
+            EntityType::Bullet(bullet) => bullet.color(),
+            EntityType::Animation(animation) => animation.color,
+        };
+
         match entity.physics.shape {
             Shape::Rect { extent } => {
                 self.set_draw_color(color);

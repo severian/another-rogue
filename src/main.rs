@@ -1,6 +1,6 @@
 extern crate sdl2;
 
-mod sdl_interop;
+mod render;
 mod vec2;
 mod entity;
 mod collision;
@@ -8,6 +8,8 @@ mod line;
 mod shape;
 mod ray;
 mod animation;
+mod player;
+mod bullet;
 
 use std::time::{Duration, Instant};
 
@@ -17,7 +19,7 @@ use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
 
-use sdl_interop::EntityRenderer;
+use render::EntityRenderer;
 use entity::{Level, make_wall, make_circle_wall, make_bullet, make_animation};
 use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
 use vec2::Vec2;
@@ -55,7 +57,10 @@ pub fn main() {
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
     level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
 
+
     'running: loop {
+        let ticks = timer.ticks();
+
         for event in event_pump.poll_iter() {
             match event {
             Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
@@ -99,15 +104,20 @@ pub fn main() {
                         _ => {}
                     }
                 }
+                Event::MouseButtonDown {..} => {
+                    level.player.mut_player().start_gun_charging(ticks);
+                }
                 Event::MouseButtonUp { x, y, .. } => {
-                    let bullet = make_bullet(level.player, Vec2::from_ints(x, y));
-                    level.bullets.push(bullet)
+                    level.player.player().bullet_type(ticks).map(|bullet_type| {
+                        let bullet = make_bullet(level.player, bullet_type, Vec2::from_ints(x, y));
+                        level.bullets.push(bullet)
+                    });
+                    level.player.mut_player().fire_gun();
                 }
                 _ => {}
             }
         }
 
-        let ticks = timer.ticks();
 
         level.player.physics.position += level.player.physics.velocity;
 
@@ -135,7 +145,7 @@ pub fn main() {
             level.bullets.retain(|bullet| {
                 match collision_point(*bullet, walls) {
                     Some((_, point)) => {
-                        animations.push(make_animation(ticks, point));
+                        animations.push(make_animation(ticks, bullet.bullet().color(), point));
                         false
                     }
                     None => true
@@ -167,25 +177,23 @@ pub fn main() {
         renderer.set_draw_color(Color::RGB(88, 110, 117));
         renderer.clear();
 
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
         for wall in &level.walls {
-            renderer.draw_entity(wall, Color::RGB(0, 0, 0));
+            renderer.draw_entity(wall);
         }
 
         renderer.set_draw_color(Color::RGB(0, 0, 255));
         renderer.draw_line(level.player.physics.position.into(), gun_los_end.into()).expect("Draw didn't work");
 
-        renderer.draw_entity(&level.player, Color::RGB(255, 0, 0));
+        renderer.draw_entity(&level.player);
 
         for bullet in &level.bullets {
-            renderer.draw_entity(bullet, Color::RGB(255, 255, 0));
+            renderer.draw_entity(bullet);
         }
 
-        renderer.set_draw_color(Color::RGB(255, 255, 0));
         for entity in &level.animations {
+            let color = entity.animation().color;
             let size = 1 * entity.animation().step(ticks);
-            renderer.filled_circle(entity.physics.position.x as i16, entity.physics.position.y as i16, (size / 2) as i16, Color::RGB(255, 255, 0)).expect("Draw didn't work");
-            //renderer.fill_rect(Rect::from_center(entity.physics.position, size, size)).expect("Draw didn't work");
+            renderer.filled_circle(entity.physics.position.x as i16, entity.physics.position.y as i16, (size / 2) as i16, color).expect("Draw didn't work");
         }
 
         renderer.present();

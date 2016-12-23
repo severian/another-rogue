@@ -1,9 +1,13 @@
+use sdl2::pixels::Color;
+
 use vec2;
 use vec2::Vec2;
 use shape::{Shape, CollisionShape, AABB, Circle};
 use ray::Ray;
 use line::LineSegment;
 use animation::Animation;
+use player::Player;
+use bullet::{Bullet, BulletType};
 
 const PLAYER_WIDTH: f32 = 20.0;
 const PLAYER_HEIGHT: f32 = 20.0;
@@ -12,9 +16,9 @@ const WALL_THICKNESS: f32 = 20.0;
 
 #[derive(Debug, Copy, Clone)]
 pub enum EntityType {
-    Player,
+    Player(Player),
     Wall,
-    Bullet,
+    Bullet(Bullet),
     Animation(Animation)
 }
 
@@ -29,9 +33,30 @@ impl Entity {
         Entity { entity_type: entity_type, physics: physics }
     }
 
-    pub fn animation(&self) -> Animation {
+    pub fn player(&self) -> &Player {
         match self.entity_type {
-            EntityType::Animation(animation) => animation,
+            EntityType::Player(ref player) => player,
+            _ => panic!("Tried to get a player from {:?}", self)
+        }
+    }
+
+    pub fn mut_player(&mut self) -> &mut Player {
+        match self.entity_type {
+            EntityType::Player(ref mut player) => player,
+            _ => panic!("Tried to get a player from {:?}", self)
+        }
+    }
+
+    pub fn bullet(&self) -> &Bullet {
+        match self.entity_type {
+            EntityType::Bullet(ref bullet) => bullet,
+            _ => panic!("Tried to get a bullet from {:?}", self)
+        }
+    }
+
+    pub fn animation(&self) -> &Animation {
+        match self.entity_type {
+            EntityType::Animation(ref animation) => animation,
             _ => panic!("Tried to get an animation from {:?}", self)
         }
     }
@@ -94,7 +119,7 @@ impl Level {
 
 pub fn make_player(level_width: f32, level_height: f32) -> Entity {
     Entity::new(
-        EntityType::Player,
+        EntityType::Player(Player::new()),
         Physics {
             //shape: Shape::Rect { extent: Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT) },
             shape: Shape::Circle { radius: PLAYER_WIDTH / 2.0 },
@@ -138,15 +163,20 @@ pub fn make_circle_wall(radius: f32, position: Vec2) -> Entity {
     )
 }
 
-pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
+pub fn make_bullet(player: Entity, bullet_type: BulletType, fired_at: Vec2) -> Entity {
     let bullet_ray = Ray::from_segment(&LineSegment::new(player.physics.position, fired_at));
+    let (radius, velocity) = match bullet_type {
+        BulletType::PewPew => (2.0, 20.0),
+        BulletType::Boom => (4.0, 12.0)
+    };
+
 
     Entity::new(
-        EntityType::Bullet,
+        EntityType::Bullet(Bullet::new(bullet_type)),
         Physics {
-            shape: Shape::Circle { radius: 2.0 },
+            shape: Shape::Circle { radius: radius },
             position: player.physics.position,
-            velocity: bullet_ray.direction.normalize() * 20.0,
+            velocity: bullet_ray.direction.normalize() * velocity,
             acceleration: vec2::ORIGIN,
 
             restitution: 0.0,
@@ -155,9 +185,9 @@ pub fn make_bullet(player: Entity, fired_at: Vec2) -> Entity {
     )
 }
 
-pub fn make_animation(start_time: u32, position: Vec2) -> Entity {
+pub fn make_animation(start_time: u32, color: Color, position: Vec2) -> Entity {
     Entity::new(
-        EntityType::Animation(Animation::new(start_time, 16, 250)),
+        EntityType::Animation(Animation::new(start_time, 16, 250, color)),
         Physics {
             shape: Shape::Circle { radius: 0.0 },
             position: position,
