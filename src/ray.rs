@@ -41,10 +41,12 @@ impl Ray {
             tmax = tmax.min(ty1.max(ty2));
         }
 
-        if tmax >= tmin && tmin >= 0.0 {
-            //println!("Ray: {:?}", self);
-            //println!("tmin: {}, tmax: {}", tmin, tmax);
+        //println!("Ray: {:?}, tmin: {}, tmax: {}", self, tmin, tmax);
+        if tmax >= tmin && tmin > 0.0 {
             Some(self.origin + (tmin * self.direction))
+        } else if tmin < 0.0 && tmax > 0.0 {
+            // from inside rect
+            Some(self.origin + (tmax * self.direction))
         } else {
             None
         }
@@ -68,8 +70,13 @@ impl Ray {
             let t1 = (-b - discriminant) / (2.0 * a);
             let t2 = (-b + discriminant) / (2.0 * a);
 
-            let tmin = t1.min(t2);
-            //println!("tmin: {}", tmin);
+            let tmin = if t1 < 0.0 {
+                // from inside circle
+                t2
+            } else {
+                t1.min(t2)
+            };
+            //println!("ray: {:?}, tmin: {}, t1: {}, t2: {}", self, tmin, t1, t2);
             if tmin >= 0.0 {
                 Some(self.origin + (tmin * self.direction))
             } else {

@@ -63,7 +63,7 @@ pub fn main() {
 
         for event in event_pump.poll_iter() {
             match event {
-            Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
                 Event::KeyDown { keycode: Some(keycode), repeat, .. } => {
@@ -159,20 +159,14 @@ pub fn main() {
 
 
         let mouse_state = event_pump.mouse_state();
-        let gun_ray = Ray::from_segment(&LineSegment::new(level.player.physics.position, mouse_state.into()));
+        let los_ray = Ray::from_segment(&LineSegment::new(level.player.physics.position, mouse_state.into()));
         
-        let gun_los_end = match nearest_ray_intersection(&gun_ray, &level.walls) {
+        let los_end = match nearest_ray_intersection(&los_ray, &level.walls) {
             Some((_, p)) => p,
-            None => gun_ray.origin + (800.0 * gun_ray.direction).normalize()
+            None => los_ray.origin + (800.0 * los_ray.direction).normalize()
         };
-        //let debug_walls = vec![*level.walls.last().unwrap()];
-        //let gun_los_end = match nearest_ray_intersection(gun_ray, &debug_walls) {
-        //    Some((_, p)) => {
-        //        println!("--------");
-        //        p
-        //    },
-        //    None => gun_ray.origin + (800.0 * gun_ray.direction).normalize()
-        //};
+
+        level.player.mut_player().looking_at = los_end;
 
         renderer.set_draw_color(Color::RGB(88, 110, 117));
         renderer.clear();
@@ -180,9 +174,6 @@ pub fn main() {
         for wall in &level.walls {
             renderer.draw_entity(wall);
         }
-
-        renderer.set_draw_color(Color::RGB(0, 0, 255));
-        renderer.draw_line(level.player.physics.position.into(), gun_los_end.into()).expect("Draw didn't work");
 
         renderer.draw_entity(&level.player);
 

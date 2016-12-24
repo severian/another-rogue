@@ -1,16 +1,19 @@
+use vec2;
+use vec2::Vec2;
 use bullet::BulletType;
 
 const BOOM_CHARGE_TIME: u32 = 1000;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Player {
+    pub looking_at: Vec2,
     pub gun_is_charging: bool,
     pub gun_charge_start_time: u32
 }
 
 impl Player {
     pub fn new() -> Player {
-        Player { gun_is_charging: false, gun_charge_start_time: 0 }
+        Player { looking_at: vec2::ORIGIN, gun_is_charging: false, gun_charge_start_time: 0 }
     }
 
     pub fn start_gun_charging(&mut self, now: u32) {
