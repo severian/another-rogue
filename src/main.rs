@@ -18,6 +18,7 @@ use sdl2::event::Event;
 use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::gfx::framerate::FPSManager;
 
 use render::EntityRenderer;
 use entity::{Level, make_wall, make_circle_wall, make_bullet, make_animation};
@@ -32,6 +33,7 @@ const WINDOW_HEIGHT: f32 = 600.0;
 const ACCELERATION: f32 = 1.0;
 const DRAG: f32 = 0.1;
 
+const FPS: u32 = 60;
 
 
 pub fn main() {
@@ -52,13 +54,18 @@ pub fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
+    let mut fps_manager = FPSManager::new();
+    fps_manager.set_framerate(FPS).expect("Setting framerate didn't work");
+
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
     level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
 
-
     'running: loop {
+        fps_manager.delay();
+        //println!("Frame time delta: {}", delta);
+
         let ticks = timer.ticks();
 
         for event in event_pump.poll_iter() {
