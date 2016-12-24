@@ -2,7 +2,7 @@ use std::f32;
 
 use vec2::Vec2;
 use line::LineSegment;
-use shape::{AABB, Circle};
+use shape::{CollisionShape, AABB, Circle};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -18,6 +18,13 @@ impl Ray {
 
     pub fn from_segment(segment: &LineSegment) -> Ray {
         Ray::new(segment.start, segment.end - segment.start)
+    }
+
+    pub fn shape_interection(&self, shape: &CollisionShape) -> Option<Vec2> {
+        match shape {
+            &CollisionShape::AABB(ref aabb) => self.box_intersection(aabb),
+            &CollisionShape::Circle(ref circle) => self.circle_intersection(circle)
+        }
     }
 
     pub fn box_intersection(&self, aabb: &AABB) -> Option<Vec2> {

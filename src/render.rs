@@ -10,7 +10,6 @@ use ray::Ray;
 use line::LineSegment;
 use shape::Shape;
 use player::Player;
-use collision::nearest_ray_intersection;
 
 
 impl Into<Point> for Vec2 {
@@ -27,7 +26,7 @@ impl Into<Vec2> for MouseState {
 
 pub trait EntityRenderer {
     fn draw_shape(&mut self, physics: &Physics, color: Color);
-    fn draw_player(&mut self, player: &Player, entity: &Entity);
+    fn draw_player(&mut self, player: &Player, physics: &Physics);
     fn draw_entity(&mut self, entity: &Entity);
 }
 
@@ -44,14 +43,15 @@ impl<'a> EntityRenderer for Renderer<'a> {
         }.expect("Draw didn't work")
     }
 
-    fn draw_player(&mut self, player: &Player, entity: &Entity) {
+    fn draw_player(&mut self, player: &Player, physics: &Physics) {
         self.set_draw_color(Color::RGB(0, 0, 255));
-        self.draw_line(entity.physics.position.into(), player.looking_at.into()).expect("Draw didn't work");
+        self.draw_line(physics.position.into(), player.looking_at.into()).expect("Draw didn't work");
 
-        self.draw_shape(&entity.physics, Color::RGB(0, 255, 0));
+        self.draw_shape(physics, Color::RGB(0, 255, 0));
 
-        match nearest_ray_intersection(&Ray::from_segment(&LineSegment::new(entity.physics.position, player.looking_at)), &[*entity]) {
-            Some((_, player_gun_intersection)) =>
+        let los_ray = Ray::from_segment(&LineSegment::new(physics.position, player.looking_at));
+        match los_ray.shape_interection(&physics.collision_shape()) {
+            Some(player_gun_intersection) =>
                 self.filled_circle(player_gun_intersection.x as i16, player_gun_intersection.y as i16, 4, Color::RGB(255, 255, 0)).expect("Draw didn't work"),
             None => {}
         }
@@ -59,7 +59,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
 
     fn draw_entity(&mut self, entity: &Entity) {
         match entity.entity_type {
-            EntityType::Player(ref player) => self.draw_player(player, entity),
+            EntityType::Player(ref player) => self.draw_player(player, &entity.physics),
             _ => {
                let color = match entity.entity_type {
                    EntityType::Wall => Color::RGB(0, 0, 0),
