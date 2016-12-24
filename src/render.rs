@@ -9,7 +9,7 @@ use entity::{Entity, EntityType, Physics};
 use ray::Ray;
 use line::LineSegment;
 use shape::Shape;
-use player::Player;
+use player::{Player, GunState};
 
 
 impl Into<Point> for Vec2 {
@@ -26,8 +26,8 @@ impl Into<Vec2> for MouseState {
 
 pub trait EntityRenderer {
     fn draw_shape(&mut self, physics: &Physics, color: Color);
-    fn draw_player(&mut self, player: &Player, physics: &Physics);
-    fn draw_entity(&mut self, entity: &Entity);
+    fn draw_player(&mut self, player: &Player, physics: &Physics, now: u32);
+    fn draw_entity(&mut self, entity: &Entity, now: u32);
 }
 
 impl<'a> EntityRenderer for Renderer<'a> {
@@ -43,23 +43,28 @@ impl<'a> EntityRenderer for Renderer<'a> {
         }.expect("Draw didn't work")
     }
 
-    fn draw_player(&mut self, player: &Player, physics: &Physics) {
+    fn draw_player(&mut self, player: &Player, physics: &Physics, now: u32) {
         self.set_draw_color(Color::RGB(0, 0, 255));
         self.draw_line(physics.position.into(), player.looking_at.into()).expect("Draw didn't work");
 
         self.draw_shape(physics, Color::RGB(0, 255, 0));
 
-        let los_ray = Ray::from_segment(&LineSegment::new(physics.position, player.looking_at));
-        match los_ray.shape_interection(&physics.collision_shape()) {
-            Some(player_gun_intersection) =>
-                self.filled_circle(player_gun_intersection.x as i16, player_gun_intersection.y as i16, 4, Color::RGB(255, 255, 0)).expect("Draw didn't work"),
-            None => {}
-        }
+        player.gun_state(now).map(|gun_state| {
+            let los_ray = Ray::from_segment(&LineSegment::new(physics.position, player.looking_at));
+            los_ray.shape_intersection(&physics.collision_shape()).map(|player_gun_intersection| {
+                let (radius, color) = match gun_state {
+                    GunState::PewPew { charge } => (charge * 4.0, Color::RGB(255, 255, 0)),
+                    GunState::Boom { charge } => ((charge * 2.0) + 4.0, Color::RGB(255, 0, 0))
+                };
+
+                self.filled_circle(player_gun_intersection.x as i16, player_gun_intersection.y as i16, radius as i16, color).expect("Draw didn't work")
+            })
+        });
     }
 
-    fn draw_entity(&mut self, entity: &Entity) {
+    fn draw_entity(&mut self, entity: &Entity, now: u32) {
         match entity.entity_type {
-            EntityType::Player(ref player) => self.draw_player(player, &entity.physics),
+            EntityType::Player(ref player) => self.draw_player(player, &entity.physics, now),
             _ => {
                let color = match entity.entity_type {
                    EntityType::Wall => Color::RGB(0, 0, 0),

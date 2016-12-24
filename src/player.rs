@@ -26,29 +26,28 @@ impl Player {
         self.gun_charge_start_time = 0;
     }
 
-    pub fn gun_state(&self, now: u32) -> GunState {
+    pub fn gun_state(&self, now: u32) -> Option<GunState> {
         if !self.gun_is_charging {
-            GunState::Off
+            None
         } else if now - self.gun_charge_start_time < BOOM_CHARGE_TIME {
-            GunState::PewPew
+            Some(GunState::PewPew { charge: ((now - self.gun_charge_start_time) as f32 / BOOM_CHARGE_TIME as f32).min(1.0) })
         } else {
-            GunState::Boom
+            Some(GunState::Boom { charge: ((now - self.gun_charge_start_time - BOOM_CHARGE_TIME) as f32 / 250.0).min(1.0) })
         }
     }
 
     pub fn bullet_type(&self, now: u32) -> Option<BulletType> {
         match self.gun_state(now) {
-            GunState::PewPew => Some(BulletType::PewPew),
-            GunState::Boom => Some(BulletType::Boom),
-            GunState::Off => None
+            Some(GunState::PewPew {..}) => Some(BulletType::PewPew),
+            Some(GunState::Boom {..}) => Some(BulletType::Boom),
+            None => None
         }
     }
 }
 
 pub enum GunState {
-    Off,
-    PewPew,
-    Boom
+    PewPew { charge: f32 },
+    Boom { charge: f32 }
 }
 
 

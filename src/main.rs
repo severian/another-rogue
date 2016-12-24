@@ -179,13 +179,13 @@ pub fn main() {
         renderer.clear();
 
         for wall in &level.walls {
-            renderer.draw_entity(wall);
+            renderer.draw_entity(wall, ticks);
         }
 
-        renderer.draw_entity(&level.player);
+        renderer.draw_entity(&level.player, ticks);
 
         for bullet in &level.bullets {
-            renderer.draw_entity(bullet);
+            renderer.draw_entity(bullet, ticks);
         }
 
         for entity in &level.animations {

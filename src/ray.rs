@@ -20,7 +20,7 @@ impl Ray {
         Ray::new(segment.start, segment.end - segment.start)
     }
 
-    pub fn shape_interection(&self, shape: &CollisionShape) -> Option<Vec2> {
+    pub fn shape_intersection(&self, shape: &CollisionShape) -> Option<Vec2> {
         match shape {
             &CollisionShape::AABB(ref aabb) => self.box_intersection(aabb),
             &CollisionShape::Circle(ref circle) => self.circle_intersection(circle)
