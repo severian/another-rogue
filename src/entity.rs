@@ -1,3 +1,6 @@
+use std::iter::Chain;
+use std::slice::IterMut;
+
 use sdl2::pixels::Color;
 
 use vec2;
@@ -42,7 +45,7 @@ impl Entity {
         }
     }
 
-    pub fn mut_player(&mut self) -> &mut Player {
+    pub fn player_mut(&mut self) -> &mut Player {
         match self.entity_type {
             EntityType::Player(ref mut player) => player,
             _ => panic!("Tried to get a player from {:?}", self)
@@ -95,29 +98,44 @@ impl Physics {
 pub struct Level {
     pub width: f32,
     pub height: f32,
-    pub player: Entity,
-    pub enemies: Vec<Entity>,
-    pub walls: Vec<Entity>,
+
+    pub collision_entities: Vec<Entity>,
+
     pub bullets: Vec<Entity>,
     pub animations: Vec<Entity>
 }
+
 
 impl Level {
     pub fn new(width: f32, height: f32) -> Level {
         Level {
             width: width,
             height: height,
-            player: make_player(width, height),
-            enemies: vec![],
-            walls: vec![
+
+            collision_entities: vec![
+                make_player(width, height),
+
                 make_wall(width, WALL_THICKNESS, Vec2::new(width / 2.0, WALL_THICKNESS / 2.0)),
                 make_wall(WALL_THICKNESS, height - (2.0 * WALL_THICKNESS), Vec2::new(width - (WALL_THICKNESS / 2.0), height / 2.0)),
                 make_wall(width, WALL_THICKNESS, Vec2::new(width / 2.0, height - (WALL_THICKNESS / 2.0))),
                 make_wall(WALL_THICKNESS, height - (2.0 * WALL_THICKNESS), Vec2::new(WALL_THICKNESS / 2.0, height / 2.0))
            ],
+
            bullets: vec![],
            animations: vec![]
         }
+    }
+
+    pub fn player(&self) -> &Entity {
+        self.collision_entities.first().unwrap()
+    }
+
+    pub fn player_mut(&mut self) -> &mut Entity {
+        self.collision_entities.first_mut().unwrap()
+    }
+
+    pub fn non_player_collision_entities(&self) -> &[Entity] {
+        self.collision_entities.split_first().unwrap().1
     }
 
 }
@@ -183,13 +201,12 @@ pub fn make_circle_wall(radius: f32, position: Vec2) -> Entity {
     )
 }
 
-pub fn make_bullet(player: Entity, bullet_type: BulletType, fired_at: Vec2) -> Entity {
+pub fn make_bullet(player: &Entity, bullet_type: BulletType, fired_at: Vec2) -> Entity {
     let bullet_ray = Ray::from_segment(&LineSegment::new(player.physics.position, fired_at));
     let (radius, velocity) = match bullet_type {
         BulletType::PewPew => (2.0, 20.0),
         BulletType::Boom => (4.0, 12.0)
     };
-
 
     Entity::new(
         EntityType::Bullet(Bullet::new(bullet_type)),

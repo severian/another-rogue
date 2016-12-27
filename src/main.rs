@@ -59,11 +59,11 @@ pub fn main() {
     fps_manager.set_framerate(FPS).expect("Setting framerate didn't work");
 
     let mut level = Level::new(WINDOW_WIDTH, WINDOW_HEIGHT);
-    level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
-    level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
-    level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
+    level.collision_entities.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
+    level.collision_entities.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
+    level.collision_entities.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
 
-    level.enemies.push(make_enemy(Vec2::new(600.0, 200.0)));
+    level.collision_entities.push(make_enemy(Vec2::new(600.0, 200.0)));
 
     'running: loop {
         fps_manager.delay();
@@ -81,16 +81,16 @@ pub fn main() {
                     if !repeat {
                         match keycode {
                             Keycode::Right => {
-                                level.player.physics.acceleration.x += ACCELERATION;
+                                level.player_mut().physics.acceleration.x += ACCELERATION;
                             },
                             Keycode::Left => {
-                                level.player.physics.acceleration.x -= ACCELERATION;
+                                level.player_mut().physics.acceleration.x -= ACCELERATION;
                             },
                             Keycode::Down => {
-                                level.player.physics.acceleration.y += ACCELERATION;
+                                level.player_mut().physics.acceleration.y += ACCELERATION;
                             },
                             Keycode::Up => {
-                                level.player.physics.acceleration.y -= ACCELERATION;
+                                level.player_mut().physics.acceleration.y -= ACCELERATION;
                             },
                             _ => {}
                         }
@@ -100,61 +100,68 @@ pub fn main() {
                     //println!("KEYUP");
                     match keycode {
                         Keycode::Right => {
-                            level.player.physics.acceleration.x -= ACCELERATION;
+                            level.player_mut().physics.acceleration.x -= ACCELERATION;
                         },
                         Keycode::Left => {
-                            level.player.physics.acceleration.x += ACCELERATION;
+                            level.player_mut().physics.acceleration.x += ACCELERATION;
                         },
                         Keycode::Down => {
-                            level.player.physics.acceleration.y -= ACCELERATION;
+                            level.player_mut().physics.acceleration.y -= ACCELERATION;
                         },
                         Keycode::Up => {
-                            level.player.physics.acceleration.y += ACCELERATION;
+                            level.player_mut().physics.acceleration.y += ACCELERATION;
                         },
                         _ => {}
                     }
                 }
                 Event::MouseButtonDown {..} => {
-                    level.player.mut_player().start_gun_charging(ticks);
+                    level.player_mut().player_mut().start_gun_charging(ticks);
                 }
                 Event::MouseButtonUp { x, y, .. } => {
-                    level.player.player().bullet_type(ticks).map(|bullet_type| {
-                        let bullet = make_bullet(level.player, bullet_type, Vec2::from_ints(x, y));
+                    level.player().player().bullet_type(ticks).map(|bullet_type| {
+                        let bullet = make_bullet(level.player(), bullet_type, Vec2::from_ints(x, y));
                         level.bullets.push(bullet)
                     });
-                    level.player.mut_player().fire_gun();
+                    level.player_mut().player_mut().fire_gun();
                 }
                 _ => {}
             }
         }
 
 
-        level.player.physics.position += level.player.physics.velocity;
+        for entity in &mut level.collision_entities {
+            entity.physics.position += entity.physics.velocity;
+        }
 
-        for entity in level.walls.iter_mut().chain(level.enemies.iter_mut()) {
-            match collision_manifold(&level.player, entity) {
-                Some(manifold) => {
-                    //println!("Collision manifold: {:?}", manifold);
-                    resolve_collision(&mut level.player, entity, manifold);
+        for i in 0..level.collision_entities.len() {
+            let (a, b) = level.collision_entities.split_at_mut(i + 1);
+            let entity_a = a.last_mut().unwrap();
+            for entity_b in b {
+                match collision_manifold(entity_a, entity_b) {
+                    Some(manifold) => {
+                        //println!("Collision manifold: {:?}", manifold);
+                        resolve_collision(entity_a, entity_b, manifold);
+                    }
+                    None => {}
                 }
-                None => {}
             }
         }
 
-        level.player.physics.velocity += level.player.physics.acceleration - level.player.physics.velocity * DRAG;
+        for entity in &mut level.collision_entities {
+            entity.physics.velocity += entity.physics.acceleration - entity.physics.velocity * DRAG;
+        }
 
         //println!("Player velocity: {:?}", level.player.velocity);
-
 
         for bullet in &mut level.bullets {
             bullet.physics.position += bullet.physics.velocity;
         }
 
         {
-            let walls = &level.walls;
             let animations = &mut level.animations;
+            let collision_entities = &level.collision_entities;
             level.bullets.retain(|bullet| {
-                match collision_point(*bullet, walls) {
+                match collision_point(bullet, &collision_entities) {
                     Some((_, point)) => {
                         animations.push(make_animation(ticks, bullet.bullet().color(), point));
                         false
@@ -168,29 +175,22 @@ pub fn main() {
             !entity.animation().is_expired(ticks)
         });
 
-
         let mouse_state = event_pump.mouse_state();
-        let los_ray = Ray::from_segment(&LineSegment::new(level.player.physics.position, mouse_state.into()));
+        let los_ray = Ray::from_segment(&LineSegment::new(level.player().physics.position, mouse_state.into()));
         
-        let los_end = match nearest_ray_intersection(&los_ray, &level.walls) {
+        let los_end = match nearest_ray_intersection(&los_ray, &level.non_player_collision_entities()) {
             Some((_, p)) => p,
             None => los_ray.origin + (800.0 * los_ray.direction).normalize()
         };
 
-        level.player.mut_player().looking_at = los_end;
+        level.player_mut().player_mut().looking_at = los_end;
 
         renderer.set_draw_color(Color::RGB(88, 110, 117));
         renderer.clear();
 
-        for wall in &level.walls {
+        for wall in &level.collision_entities {
             renderer.draw_entity(wall, ticks);
         }
-
-        for enemy in &level.enemies {
-            renderer.draw_entity(enemy, ticks);
-        }
-
-        renderer.draw_entity(&level.player, ticks);
 
         for bullet in &level.bullets {
             renderer.draw_entity(bullet, ticks);
