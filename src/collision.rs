@@ -163,13 +163,13 @@ fn resolve_bounce(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
     
     let impulse = j * manifold.normal;
 
-    //println!("Velocity before delta: {:?}", a.velocity);
+    //println!("Impulse: {:?}", impulse);
+    //println!("Velocity before delta: {:?}, {:?}", a.velocity, b.velocity);
 
     a.velocity -= a.inv_mass * impulse;
     b.velocity += b.inv_mass * impulse;
 
-    //println!("Velocity after delta: {:?}", a.velocity);
-
+    //println!("Velocity after delta: {:?}, {:?}", a.velocity, b.velocity);
 }
 
 fn fixup_position(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
@@ -177,7 +177,7 @@ fn fixup_position(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
     let correction = manifold.penetration / (a.inv_mass + b.inv_mass) * manifold.normal;
 
     a.position -= a.inv_mass * correction;
-    b.position -= b.inv_mass * correction;
+    b.position += b.inv_mass * correction;
 }
 
 pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(Entity, Vec2)> {

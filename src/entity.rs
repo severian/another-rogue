@@ -7,6 +7,7 @@ use ray::Ray;
 use line::LineSegment;
 use animation::Animation;
 use player::Player;
+use enemy::Enemy;
 use bullet::{Bullet, BulletType};
 
 const PLAYER_WIDTH: f32 = 20.0;
@@ -19,7 +20,8 @@ pub enum EntityType {
     Player(Player),
     Wall,
     Bullet(Bullet),
-    Animation(Animation)
+    Animation(Animation),
+    Enemy(Enemy)
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -94,6 +96,7 @@ pub struct Level {
     pub width: f32,
     pub height: f32,
     pub player: Entity,
+    pub enemies: Vec<Entity>,
     pub walls: Vec<Entity>,
     pub bullets: Vec<Entity>,
     pub animations: Vec<Entity>
@@ -105,6 +108,7 @@ impl Level {
             width: width,
             height: height,
             player: make_player(width, height),
+            enemies: vec![],
             walls: vec![
                 make_wall(width, WALL_THICKNESS, Vec2::new(width / 2.0, WALL_THICKNESS / 2.0)),
                 make_wall(WALL_THICKNESS, height - (2.0 * WALL_THICKNESS), Vec2::new(width - (WALL_THICKNESS / 2.0), height / 2.0)),
@@ -115,6 +119,7 @@ impl Level {
            animations: vec![]
         }
     }
+
 }
 
 pub fn make_player(level_width: f32, level_height: f32) -> Entity {
@@ -127,8 +132,23 @@ pub fn make_player(level_width: f32, level_height: f32) -> Entity {
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,
 
-            restitution: 1.0,
+            restitution: 1.5,
             inv_mass: 1.0 / 20.0
+        }
+    )
+}
+pub fn make_enemy(position: Vec2) -> Entity {
+    Entity::new(
+        EntityType::Enemy(Enemy::new(10.0)),
+        Physics {
+            //shape: Shape::Rect { extent: Vec2::new(30.0, 30.0) },
+            shape: Shape::Circle { radius: 15.0 },
+            position: position,
+            velocity: vec2::ORIGIN,
+            acceleration: vec2::ORIGIN,
+
+            restitution: 1.5,
+            inv_mass: 1.0 / 50.0
         }
     )
 }
@@ -142,7 +162,7 @@ pub fn make_wall(width: f32, height: f32, position: Vec2) -> Entity {
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,
 
-            restitution: 50.0,
+            restitution: 1.5,
             inv_mass: 0.0
         }
     )

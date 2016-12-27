@@ -10,6 +10,7 @@ use ray::Ray;
 use line::LineSegment;
 use shape::Shape;
 use player::{Player, GunState};
+use enemy::Enemy;
 
 
 impl Into<Point> for Vec2 {
@@ -27,6 +28,7 @@ impl Into<Vec2> for MouseState {
 pub trait EntityRenderer {
     fn draw_shape(&mut self, physics: &Physics, color: Color);
     fn draw_player(&mut self, player: &Player, physics: &Physics, now: u32);
+    fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics);
     fn draw_entity(&mut self, entity: &Entity, now: u32);
 }
 
@@ -62,9 +64,14 @@ impl<'a> EntityRenderer for Renderer<'a> {
         });
     }
 
+    fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics) {
+        self.draw_shape(physics, Color::RGB(255, 0, 0));
+    }
+
     fn draw_entity(&mut self, entity: &Entity, now: u32) {
         match entity.entity_type {
             EntityType::Player(ref player) => self.draw_player(player, &entity.physics, now),
+            EntityType::Enemy(ref enemy) => self.draw_enemy(enemy, &entity.physics),
             _ => {
                let color = match entity.entity_type {
                    EntityType::Wall => Color::RGB(0, 0, 0),

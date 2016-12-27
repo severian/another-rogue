@@ -9,6 +9,7 @@ mod shape;
 mod ray;
 mod animation;
 mod player;
+mod enemy;
 mod bullet;
 
 use std::time::{Duration, Instant};
@@ -21,7 +22,7 @@ use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::gfx::framerate::FPSManager;
 
 use render::EntityRenderer;
-use entity::{Level, make_wall, make_circle_wall, make_bullet, make_animation};
+use entity::{Level, make_wall, make_circle_wall, make_bullet, make_animation, make_enemy};
 use collision::{collision_manifold, resolve_collision, nearest_ray_intersection, collision_point};
 use vec2::Vec2;
 use line::LineSegment;
@@ -61,6 +62,8 @@ pub fn main() {
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(200.0, 200.0)));
     level.walls.push(make_wall(40.0, 40.0, Vec2::new(400.0, 400.0)));
     level.walls.push(make_circle_wall(20.0, Vec2::new(500.0, 400.0)));
+
+    level.enemies.push(make_enemy(Vec2::new(600.0, 200.0)));
 
     'running: loop {
         fps_manager.delay();
@@ -128,15 +131,16 @@ pub fn main() {
 
         level.player.physics.position += level.player.physics.velocity;
 
-        for wall in &mut level.walls {
-            match collision_manifold(&level.player, wall) {
+        for entity in level.walls.iter_mut().chain(level.enemies.iter_mut()) {
+            match collision_manifold(&level.player, entity) {
                 Some(manifold) => {
                     //println!("Collision manifold: {:?}", manifold);
-                    resolve_collision(&mut level.player, wall, manifold);
+                    resolve_collision(&mut level.player, entity, manifold);
                 }
                 None => {}
             }
         }
+
         level.player.physics.velocity += level.player.physics.acceleration - level.player.physics.velocity * DRAG;
 
         //println!("Player velocity: {:?}", level.player.velocity);
@@ -180,6 +184,10 @@ pub fn main() {
 
         for wall in &level.walls {
             renderer.draw_entity(wall, ticks);
+        }
+
+        for enemy in &level.enemies {
+            renderer.draw_entity(enemy, ticks);
         }
 
         renderer.draw_entity(&level.player, ticks);
