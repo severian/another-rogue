@@ -180,11 +180,11 @@ fn fixup_position(a: &mut Physics, b: &mut Physics, manifold: Manifold) {
     b.position += b.inv_mass * correction;
 }
 
-pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(Entity, Vec2)> {
+pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(usize, Vec2)> {
     let mut intersection = None;
     let mut min_distance = f32::INFINITY;
 
-    for entity in entities {
+    for (i, entity) in entities.iter().enumerate() {
         let maybe_point = match entity.physics.collision_shape() {
             CollisionShape::AABB(aabb) => ray.box_intersection(&aabb),
             CollisionShape::Circle(circle) => ray.circle_intersection(&circle)
@@ -195,7 +195,7 @@ pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(Entit
                 //println!("Intersection point: {:?}", point);
                 let distance = ray.origin.distance(point);
                 if distance < min_distance {
-                    intersection = Some((*entity, point));
+                    intersection = Some((i, point));
                     min_distance = distance;
                 }
             }
@@ -207,7 +207,7 @@ pub fn nearest_ray_intersection(ray: &Ray, entities: &[Entity]) -> Option<(Entit
     return intersection;
 }
 
-pub fn collision_point(entity: &Entity, entities: &[Entity]) -> Option<(Entity, Vec2)> {
+pub fn collision_point(entity: &Entity, entities: &[Entity]) -> Option<(usize, Vec2)> {
     let movement_line = LineSegment::new(entity.physics.position, entity.physics.position + entity.physics.velocity);
     
     nearest_ray_intersection(&Ray::from_segment(&movement_line), entities).and_then(|result| {

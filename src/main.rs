@@ -27,6 +27,7 @@ use collision::{collision_manifold, resolve_collision, nearest_ray_intersection,
 use vec2::Vec2;
 use line::LineSegment;
 use ray::Ray;
+use entity::EntityType;
 
 const WINDOW_WIDTH: f32 = 800.0;
 const WINDOW_HEIGHT: f32 = 600.0;
@@ -159,16 +160,28 @@ pub fn main() {
 
         {
             let animations = &mut level.animations;
-            let collision_entities = &level.collision_entities;
+            let collision_entities = &mut level.collision_entities;
             level.bullets.retain(|bullet| {
-                match collision_point(bullet, &collision_entities) {
-                    Some((_, point)) => {
+                match collision_point(bullet, collision_entities) {
+                    Some((index, point)) => {
                         animations.push(make_animation(ticks, bullet.bullet().color(), point));
+
+                        match collision_entities.get_mut(index).unwrap().entity_type {
+                            EntityType::Enemy(ref mut enemy) => {
+                                enemy.take_hit(bullet)
+                            }
+                            _ => {}
+                        }
+
                         false
                     }
                     None => true
                 }
             });
+        }
+
+        for entity in &mut level.collision_entities {
+            entity.update_physics()
         }
 
         level.animations.retain(|entity| {

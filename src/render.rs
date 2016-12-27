@@ -1,3 +1,4 @@
+use std;
 use sdl2::render::Renderer;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
@@ -65,7 +66,27 @@ impl<'a> EntityRenderer for Renderer<'a> {
     }
 
     fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics) {
-        self.draw_shape(physics, Color::RGB(255, 0, 0));
+        self.filled_circle(physics.position.x as i16, physics.position.y as i16, enemy.inner_radius as i16, Color::RGB(255, 0, 0));
+
+
+        if enemy.has_shield() {
+            match physics.shape {
+                Shape::Circle { radius } => {
+                    let num_ticks = 12;
+                    let angle_step = (std::f32::consts::PI * 2.0) / num_ticks as f32;
+
+                    for tick in 0..num_ticks {
+                        let angle = tick as f32 * angle_step;
+                        let x = physics.position.x + radius * angle.cos();
+                        let y = physics.position.y + radius * angle.sin();
+
+                        self.filled_circle(x as i16, y as i16, 3, Color::RGB(75, 162, 153));
+                    }
+
+                }
+                _ => {}
+            }
+        }
     }
 
     fn draw_entity(&mut self, entity: &Entity, now: u32) {

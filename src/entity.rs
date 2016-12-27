@@ -65,6 +65,13 @@ impl Entity {
             _ => panic!("Tried to get an animation from {:?}", self)
         }
     }
+
+    pub fn update_physics(&mut self) {
+        match self.entity_type {
+            EntityType::Enemy(ref enemy) => enemy.update_physics(&mut self.physics),
+            _ => {}
+        }
+    }
 }
 
 
