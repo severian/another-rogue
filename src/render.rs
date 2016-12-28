@@ -1,4 +1,5 @@
-use std;
+use std::f32;
+
 use sdl2::render::Renderer;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
@@ -44,7 +45,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
                 self.fill_rect(Rect::from_center(physics.position, extent.x as u32, extent.y as u32))
             }
             Shape::Circle { radius } =>
-                self.filled_circle(physics.position.x as i16, physics.position.y as i16, radius as i16, color)
+                self.filled_circle(physics.position.x.round() as i16, physics.position.y.round() as i16, radius.round() as i16, color)
         }.expect("Draw didn't work")
     }
 
@@ -62,7 +63,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
                     GunState::Boom { charge } => ((charge * 2.0) + 4.0, Color::RGB(255, 0, 0))
                 };
 
-                self.filled_circle(player_gun_intersection.x as i16, player_gun_intersection.y as i16, radius as i16, color).expect("Draw didn't work")
+                self.filled_circle(player_gun_intersection.x.round() as i16, player_gun_intersection.y.round() as i16, radius.round() as i16, color).expect("Draw didn't work")
             })
         });
     }
@@ -70,24 +71,22 @@ impl<'a> EntityRenderer for Renderer<'a> {
     fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics) {
         self.filled_circle(physics.position.x as i16, physics.position.y as i16, enemy.inner_radius as i16, Color::RGB(255, 0, 0));
 
+        match physics.shape {
+            Shape::Circle { radius } => {
+                let draw_radius = radius - 3.0;
+                let angle_step = (f32::consts::PI * 2.0) / enemy.shield_health.len() as f32;
 
-        if enemy.has_shield() {
-            match physics.shape {
-                Shape::Circle { radius } => {
-                    let num_ticks = 12;
-                    let angle_step = (std::f32::consts::PI * 2.0) / num_ticks as f32;
+                for (i, shield_health) in enemy.shield_health.iter().enumerate() {
+                    if *shield_health > 0.0 {
+                        let angle = i as f32 * angle_step;
+                        let x = physics.position.x + draw_radius * angle.cos();
+                        let y = physics.position.y + draw_radius * angle.sin();
 
-                    for tick in 0..num_ticks {
-                        let angle = tick as f32 * angle_step;
-                        let x = physics.position.x + radius * angle.cos();
-                        let y = physics.position.y + radius * angle.sin();
-
-                        self.filled_circle(x as i16, y as i16, 3, Color::RGB(75, 162, 153));
+                        self.filled_circle(x.round() as i16, y.round() as i16, 3, Color::RGB(75, 162, 153));
                     }
-
                 }
-                _ => {}
             }
+            _ => {}
         }
     }
 

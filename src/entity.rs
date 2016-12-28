@@ -1,3 +1,5 @@
+use std::f32;
+
 use std::iter::Chain;
 use std::slice::IterMut;
 
@@ -66,14 +68,13 @@ impl Entity {
         }
     }
 
-    pub fn update(&mut self, time_delta: u32) {
+    pub fn animation_mut(&mut self) -> &mut Animation {
         match self.entity_type {
-            EntityType::Player(ref mut player) => player.update(time_delta),
-            EntityType::Enemy(ref mut enemy) => enemy.update(&mut self.physics, time_delta),
-            EntityType::Animation(ref mut animation) => animation.update(time_delta),
-            _ => {}
+            EntityType::Animation(ref mut animation) => animation,
+            _ => panic!("Tried to get an animation from {:?}", self)
         }
     }
+
 }
 
 
@@ -147,6 +148,28 @@ impl Level {
         self.collision_entities.split_first().unwrap().1
     }
 
+    pub fn non_player_collision_entities_mut(&mut self) -> &[Entity] {
+        self.collision_entities.split_first_mut().unwrap().1
+    }
+
+    pub fn update(&mut self, time_delta: u32) {
+        let (player, entities) = self.collision_entities.split_first_mut().unwrap();
+
+        player.player_mut().update(time_delta);
+
+        for entity in entities {
+            match entity.entity_type {
+                EntityType::Player(ref mut player) => player.update(time_delta),
+                EntityType::Enemy(ref mut enemy) => enemy.update(&mut entity.physics, player, time_delta),
+                _ => {}
+            }
+        }
+
+        for animation in &mut self.animations {
+            animation.animation_mut().update(time_delta)
+        }
+    }
+
 }
 
 pub fn make_player(level_width: f32, level_height: f32) -> Entity {
@@ -169,7 +192,7 @@ pub fn make_enemy(position: Vec2) -> Entity {
         EntityType::Enemy(Enemy::new(10.0)),
         Physics {
             //shape: Shape::Rect { extent: Vec2::new(30.0, 30.0) },
-            shape: Shape::Circle { radius: 15.0 },
+            shape: Shape::Circle { radius: 20.0 },
             position: position,
             velocity: vec2::ORIGIN,
             acceleration: vec2::ORIGIN,
@@ -212,6 +235,9 @@ pub fn make_circle_wall(radius: f32, position: Vec2) -> Entity {
 
 pub fn make_bullet(player: &Entity, bullet_type: BulletType, fired_at: Vec2) -> Entity {
     let bullet_ray = Ray::from_segment(&LineSegment::new(player.physics.position, fired_at));
+    let bullet_pos = bullet_ray.shape_intersection(&player.physics.collision_shape()).unwrap();
+    let normal = bullet_ray.direction.normalize();
+
     let (radius, velocity) = match bullet_type {
         BulletType::PewPew => (2.0, 20.0),
         BulletType::Boom => (4.0, 12.0)
@@ -221,8 +247,8 @@ pub fn make_bullet(player: &Entity, bullet_type: BulletType, fired_at: Vec2) -> 
         EntityType::Bullet(Bullet::new(bullet_type)),
         Physics {
             shape: Shape::Circle { radius: radius },
-            position: player.physics.position,
-            velocity: bullet_ray.direction.normalize() * velocity,
+            position: bullet_pos + (normal * 0.0001),
+            velocity: normal * velocity,
             acceleration: vec2::ORIGIN,
 
             restitution: 0.0,

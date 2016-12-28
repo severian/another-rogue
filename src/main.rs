@@ -12,7 +12,7 @@ mod player;
 mod enemy;
 mod bullet;
 
-use std::time::{Duration, Instant};
+use std::f32;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -68,13 +68,7 @@ pub fn main() {
         let delta = fps_manager.delay();
         //println!("Frame time delta: {}", delta);
 
-        for entity in &mut level.collision_entities {
-            entity.update(delta)
-        }
-
-        for entity in &mut level.animations {
-            entity.update(delta)
-        }
+        level.update(delta);
 
         for event in event_pump.poll_iter() {
             match event {
@@ -137,10 +131,6 @@ pub fn main() {
             entity.physics.position += entity.physics.velocity;
         }
 
-        for bullet in &mut level.bullets {
-            bullet.physics.position += bullet.physics.velocity;
-        }
-
         for i in 0..level.collision_entities.len() {
             let (a, b) = level.collision_entities.split_at_mut(i + 1);
             let entity_a = a.last_mut().unwrap();
@@ -169,9 +159,10 @@ pub fn main() {
                     Some((index, point)) => {
                         animations.push(make_animation(bullet.bullet().color(), point));
 
-                        match collision_entities.get_mut(index).unwrap().entity_type {
+                        let hit_entity = collision_entities.get_mut(index).unwrap();
+                        match hit_entity.entity_type {
                             EntityType::Enemy(ref mut enemy) => {
-                                enemy.take_hit(bullet)
+                                enemy.take_hit(&hit_entity.physics, bullet);
                             }
                             _ => {}
                         }
@@ -181,6 +172,10 @@ pub fn main() {
                     None => true
                 }
             });
+        }
+
+        for bullet in &mut level.bullets {
+            bullet.physics.position += bullet.physics.velocity;
         }
         
         level.animations.retain(|entity| {
