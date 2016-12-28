@@ -12,6 +12,7 @@ use line::LineSegment;
 use shape::Shape;
 use player::{Player, GunState};
 use enemy::Enemy;
+use animation::Animation;
 
 
 impl Into<Point> for Vec2 {
@@ -30,6 +31,7 @@ pub trait EntityRenderer {
     fn draw_shape(&mut self, physics: &Physics, color: Color);
     fn draw_player(&mut self, player: &Player, physics: &Physics);
     fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics);
+    fn draw_animation(&mut self, animation: &Animation, physics: &Physics);
     fn draw_entity(&mut self, entity: &Entity);
 }
 
@@ -89,15 +91,20 @@ impl<'a> EntityRenderer for Renderer<'a> {
         }
     }
 
+    fn draw_animation(&mut self, animation: &Animation, physics: &Physics) {
+        let size = 1 * animation.step();
+        self.filled_circle(physics.position.x as i16, physics.position.y as i16, (size / 2) as i16, animation.color).expect("Draw didn't work");
+    }
+
     fn draw_entity(&mut self, entity: &Entity) {
         match entity.entity_type {
             EntityType::Player(ref player) => self.draw_player(player, &entity.physics),
             EntityType::Enemy(ref enemy) => self.draw_enemy(enemy, &entity.physics),
+            EntityType::Animation(ref animation) => self.draw_animation(animation, &entity.physics),
             _ => {
                let color = match entity.entity_type {
                    EntityType::Wall => Color::RGB(0, 0, 0),
                    EntityType::Bullet(bullet) => bullet.color(),
-                   EntityType::Animation(animation) => animation.color,
                    _ => panic!("wrong entity")
                };
 

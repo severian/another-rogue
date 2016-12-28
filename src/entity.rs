@@ -70,6 +70,7 @@ impl Entity {
         match self.entity_type {
             EntityType::Player(ref mut player) => player.update(time_delta),
             EntityType::Enemy(ref mut enemy) => enemy.update(&mut self.physics, time_delta),
+            EntityType::Animation(ref mut animation) => animation.update(time_delta),
             _ => {}
         }
     }
@@ -230,9 +231,9 @@ pub fn make_bullet(player: &Entity, bullet_type: BulletType, fired_at: Vec2) -> 
     )
 }
 
-pub fn make_animation(start_time: u32, color: Color, position: Vec2) -> Entity {
+pub fn make_animation(color: Color, position: Vec2) -> Entity {
     Entity::new(
-        EntityType::Animation(Animation::new(start_time, 16, 250, color)),
+        EntityType::Animation(Animation::new(16, 250, color)),
         Physics {
             shape: Shape::Circle { radius: 0.0 },
             position: position,

@@ -52,8 +52,6 @@ pub fn main() {
 
     let mut renderer = window.renderer().present_vsync().build().unwrap();
 
-    let mut timer = sdl_context.timer().unwrap();
-
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut fps_manager = FPSManager::new();
@@ -74,7 +72,9 @@ pub fn main() {
             entity.update(delta)
         }
 
-        let ticks = timer.ticks();
+        for entity in &mut level.animations {
+            entity.update(delta)
+        }
 
         for event in event_pump.poll_iter() {
             match event {
@@ -167,7 +167,7 @@ pub fn main() {
             level.bullets.retain(|bullet| {
                 match collision_point(bullet, collision_entities) {
                     Some((index, point)) => {
-                        animations.push(make_animation(ticks, bullet.bullet().color(), point));
+                        animations.push(make_animation(bullet.bullet().color(), point));
 
                         match collision_entities.get_mut(index).unwrap().entity_type {
                             EntityType::Enemy(ref mut enemy) => {
@@ -184,7 +184,7 @@ pub fn main() {
         }
         
         level.animations.retain(|entity| {
-            !entity.animation().is_expired(ticks)
+            !entity.animation().is_expired()
         });
 
         let mouse_state = event_pump.mouse_state();
@@ -209,9 +209,7 @@ pub fn main() {
         }
 
         for entity in &level.animations {
-            let color = entity.animation().color;
-            let size = 1 * entity.animation().step(ticks);
-            renderer.filled_circle(entity.physics.position.x as i16, entity.physics.position.y as i16, (size / 2) as i16, color).expect("Draw didn't work");
+            renderer.draw_entity(entity);
         }
 
         renderer.present();
