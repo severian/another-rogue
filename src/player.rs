@@ -8,41 +8,53 @@ const BOOM_CHARGE_TIME: u32 = 1000;
 pub struct Player {
     pub looking_at: Vec2,
     pub gun_is_charging: bool,
-    pub gun_charge_start_time: u32
+    pub gun_charge_time: u32
 }
 
 impl Player {
     pub fn new() -> Player {
-        Player { looking_at: vec2::ORIGIN, gun_is_charging: false, gun_charge_start_time: 0 }
+        Player { looking_at: vec2::ORIGIN, gun_is_charging: false, gun_charge_time: 0 }
     }
 
-    pub fn start_gun_charging(&mut self, now: u32) {
+    pub fn start_gun_charging(&mut self) {
         self.gun_is_charging = true;
-        self.gun_charge_start_time = now;
+        self.gun_charge_time = 0;
     }
 
-    pub fn fire_gun(&mut self) {
+    pub fn fire_gun(&mut self) -> Option<BulletType> {
+        let bullet_type = self.bullet_type();
+
         self.gun_is_charging = false;
-        self.gun_charge_start_time = 0;
+        self.gun_charge_time = 0;
+
+        bullet_type
     }
 
-    pub fn gun_state(&self, now: u32) -> Option<GunState> {
-        if !self.gun_is_charging {
-            None
-        } else if now - self.gun_charge_start_time < BOOM_CHARGE_TIME {
-            Some(GunState::PewPew { charge: ((now - self.gun_charge_start_time) as f32 / BOOM_CHARGE_TIME as f32).min(1.0) })
-        } else {
-            Some(GunState::Boom { charge: ((now - self.gun_charge_start_time - BOOM_CHARGE_TIME) as f32 / 250.0).min(1.0) })
+    pub fn update(&mut self, time_delta: u32) {
+        if self.gun_is_charging {
+            self.gun_charge_time += time_delta;
         }
     }
 
-    pub fn bullet_type(&self, now: u32) -> Option<BulletType> {
-        match self.gun_state(now) {
+    pub fn gun_state(&self) -> Option<GunState> {
+        if !self.gun_is_charging {
+            None
+        } else if self.gun_charge_time < BOOM_CHARGE_TIME {
+            Some(GunState::PewPew { charge: (self.gun_charge_time as f32 / BOOM_CHARGE_TIME as f32).min(1.0) })
+        } else {
+            Some(GunState::Boom { charge: ((self.gun_charge_time - BOOM_CHARGE_TIME) as f32 / 250.0).min(1.0) })
+        }
+    }
+
+    pub fn bullet_type(&self) -> Option<BulletType> {
+        match self.gun_state() {
             Some(GunState::PewPew {..}) => Some(BulletType::PewPew),
             Some(GunState::Boom {..}) => Some(BulletType::Boom),
             None => None
         }
     }
+
+
 }
 
 pub enum GunState {

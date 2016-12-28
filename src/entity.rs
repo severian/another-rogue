@@ -66,9 +66,10 @@ impl Entity {
         }
     }
 
-    pub fn update_physics(&mut self) {
+    pub fn update(&mut self, time_delta: u32) {
         match self.entity_type {
-            EntityType::Enemy(ref enemy) => enemy.update_physics(&mut self.physics),
+            EntityType::Player(ref mut player) => player.update(time_delta),
+            EntityType::Enemy(ref mut enemy) => enemy.update(&mut self.physics, time_delta),
             _ => {}
         }
     }

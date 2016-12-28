@@ -1,6 +1,6 @@
 use sdl2::pixels::Color;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BulletType {
     PewPew,
     Boom
@@ -8,7 +8,7 @@ pub enum BulletType {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bullet {
-    bullet_type: BulletType
+    pub bullet_type: BulletType
 }
 
 impl Bullet {

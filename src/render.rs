@@ -28,9 +28,9 @@ impl Into<Vec2> for MouseState {
 
 pub trait EntityRenderer {
     fn draw_shape(&mut self, physics: &Physics, color: Color);
-    fn draw_player(&mut self, player: &Player, physics: &Physics, now: u32);
+    fn draw_player(&mut self, player: &Player, physics: &Physics);
     fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics);
-    fn draw_entity(&mut self, entity: &Entity, now: u32);
+    fn draw_entity(&mut self, entity: &Entity);
 }
 
 impl<'a> EntityRenderer for Renderer<'a> {
@@ -46,13 +46,13 @@ impl<'a> EntityRenderer for Renderer<'a> {
         }.expect("Draw didn't work")
     }
 
-    fn draw_player(&mut self, player: &Player, physics: &Physics, now: u32) {
+    fn draw_player(&mut self, player: &Player, physics: &Physics) {
         self.set_draw_color(Color::RGB(0, 0, 255));
         self.draw_line(physics.position.into(), player.looking_at.into()).expect("Draw didn't work");
 
         self.draw_shape(physics, Color::RGB(0, 255, 0));
 
-        player.gun_state(now).map(|gun_state| {
+        player.gun_state().map(|gun_state| {
             let los_ray = Ray::from_segment(&LineSegment::new(physics.position, player.looking_at));
             los_ray.shape_intersection(&physics.collision_shape()).map(|player_gun_intersection| {
                 let (radius, color) = match gun_state {
@@ -89,9 +89,9 @@ impl<'a> EntityRenderer for Renderer<'a> {
         }
     }
 
-    fn draw_entity(&mut self, entity: &Entity, now: u32) {
+    fn draw_entity(&mut self, entity: &Entity) {
         match entity.entity_type {
-            EntityType::Player(ref player) => self.draw_player(player, &entity.physics, now),
+            EntityType::Player(ref player) => self.draw_player(player, &entity.physics),
             EntityType::Enemy(ref enemy) => self.draw_enemy(enemy, &entity.physics),
             _ => {
                let color = match entity.entity_type {

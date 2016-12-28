@@ -67,8 +67,12 @@ pub fn main() {
     level.collision_entities.push(make_enemy(Vec2::new(600.0, 200.0)));
 
     'running: loop {
-        fps_manager.delay();
+        let delta = fps_manager.delay();
         //println!("Frame time delta: {}", delta);
+
+        for entity in &mut level.collision_entities {
+            entity.update(delta)
+        }
 
         let ticks = timer.ticks();
 
@@ -116,14 +120,13 @@ pub fn main() {
                     }
                 }
                 Event::MouseButtonDown {..} => {
-                    level.player_mut().player_mut().start_gun_charging(ticks);
+                    level.player_mut().player_mut().start_gun_charging();
                 }
                 Event::MouseButtonUp { x, y, .. } => {
-                    level.player().player().bullet_type(ticks).map(|bullet_type| {
+                    level.player_mut().player_mut().fire_gun().map(|bullet_type| {
                         let bullet = make_bullet(level.player(), bullet_type, Vec2::from_ints(x, y));
                         level.bullets.push(bullet)
                     });
-                    level.player_mut().player_mut().fire_gun();
                 }
                 _ => {}
             }
@@ -132,6 +135,10 @@ pub fn main() {
 
         for entity in &mut level.collision_entities {
             entity.physics.position += entity.physics.velocity;
+        }
+
+        for bullet in &mut level.bullets {
+            bullet.physics.position += bullet.physics.velocity;
         }
 
         for i in 0..level.collision_entities.len() {
@@ -154,10 +161,6 @@ pub fn main() {
 
         //println!("Player velocity: {:?}", level.player.velocity);
 
-        for bullet in &mut level.bullets {
-            bullet.physics.position += bullet.physics.velocity;
-        }
-
         {
             let animations = &mut level.animations;
             let collision_entities = &mut level.collision_entities;
@@ -179,11 +182,7 @@ pub fn main() {
                 }
             });
         }
-
-        for entity in &mut level.collision_entities {
-            entity.update_physics()
-        }
-
+        
         level.animations.retain(|entity| {
             !entity.animation().is_expired(ticks)
         });
@@ -202,11 +201,11 @@ pub fn main() {
         renderer.clear();
 
         for wall in &level.collision_entities {
-            renderer.draw_entity(wall, ticks);
+            renderer.draw_entity(wall);
         }
 
         for bullet in &level.bullets {
-            renderer.draw_entity(bullet, ticks);
+            renderer.draw_entity(bullet);
         }
 
         for entity in &level.animations {
