@@ -131,6 +131,11 @@ pub fn main() {
             entity.physics.position += entity.physics.velocity;
         }
 
+        for bullet in &mut level.bullets {
+            bullet.physics.position += bullet.physics.velocity;
+        }
+
+        // Entity collision
         for i in 0..level.collision_entities.len() {
             let (a, b) = level.collision_entities.split_at_mut(i + 1);
             let entity_a = a.last_mut().unwrap();
@@ -145,12 +150,7 @@ pub fn main() {
             }
         }
 
-        for entity in &mut level.collision_entities {
-            entity.physics.velocity += entity.physics.acceleration - entity.physics.velocity * DRAG;
-        }
-
-        //println!("Player velocity: {:?}", level.player.velocity);
-
+        // Bullet collision
         {
             let animations = &mut level.animations;
             let collision_entities = &mut level.collision_entities;
@@ -174,10 +174,13 @@ pub fn main() {
             });
         }
 
-        for bullet in &mut level.bullets {
-            bullet.physics.position += bullet.physics.velocity;
+        for entity in &mut level.collision_entities {
+            entity.physics.velocity += entity.physics.acceleration - entity.physics.velocity * DRAG;
         }
-        
+
+        //println!("Player velocity: {:?}", level.player.velocity);
+
+
         level.animations.retain(|entity| {
             !entity.animation().is_expired()
         });
