@@ -1,8 +1,5 @@
 use std::f32;
 
-use std::iter::Chain;
-use std::slice::IterMut;
-
 use sdl2::pixels::Color;
 
 use vec2;
@@ -16,7 +13,6 @@ use enemy::Enemy;
 use bullet::{Bullet, BulletType};
 
 const PLAYER_WIDTH: f32 = 20.0;
-const PLAYER_HEIGHT: f32 = 20.0;
 
 const WALL_THICKNESS: f32 = 20.0;
 
@@ -160,7 +156,7 @@ impl Level {
         for entity in entities {
             match entity.entity_type {
                 EntityType::Player(ref mut player) => player.update(time_delta),
-                EntityType::Enemy(ref mut enemy) => enemy.update(&mut entity.physics, player, time_delta),
+                EntityType::Enemy(ref mut enemy) => enemy.update(time_delta),
                 _ => {}
             }
         }

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["James Baird <james@pancake-labs.com>"]
 
 [dependencies.sdl2]
-version = "0.27"
+version = "0.31.0"
 default-features = false
 features = ["gfx"]
 

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate sdl2;
 
 mod render;
@@ -16,9 +18,7 @@ use std::f32;
 
 use sdl2::pixels::Color;
 use sdl2::event::Event;
-use sdl2::rect::{Rect, Point};
 use sdl2::keyboard::Keycode;
-use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::gfx::framerate::FPSManager;
 
 use render::EntityRenderer;
@@ -50,7 +50,7 @@ pub fn main() {
 
     // let mut timer = sdl_context.timer().unwrap();
 
-    let mut renderer = window.renderer().present_vsync().build().unwrap();
+    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -187,7 +187,7 @@ pub fn main() {
 
         let mouse_state = event_pump.mouse_state();
         let los_ray = Ray::from_segment(&LineSegment::new(level.player().physics.position, mouse_state.into()));
-        
+
         let los_end = match nearest_ray_intersection(&los_ray, &level.non_player_collision_entities()) {
             Some((_, p)) => p,
             None => los_ray.origin + (800.0 * los_ray.direction).normalize()
@@ -195,24 +195,24 @@ pub fn main() {
 
         level.player_mut().player_mut().looking_at = los_end;
 
-        renderer.set_draw_color(Color::RGB(88, 110, 117));
-        renderer.clear();
+        canvas.set_draw_color(Color::RGB(88, 110, 117));
+        canvas.clear();
 
         for wall in &level.collision_entities {
-            renderer.draw_entity(wall);
+            canvas.draw_entity(wall);
         }
 
         for bullet in &level.bullets {
-            renderer.draw_entity(bullet);
+            canvas.draw_entity(bullet);
         }
 
         for entity in &level.animations {
-            renderer.draw_entity(entity);
+            canvas.draw_entity(entity);
         }
 
-        renderer.present();
+        canvas.present();
 
- 
+
         // println!("Ticks: {}", timer.ticks());
     }
 }

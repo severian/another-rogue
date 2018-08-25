@@ -1,6 +1,6 @@
 use std::f32;
 
-use sdl2::render::Renderer;
+use sdl2::render::WindowCanvas;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Rect, Point};
@@ -36,7 +36,7 @@ pub trait EntityRenderer {
     fn draw_entity(&mut self, entity: &Entity);
 }
 
-impl<'a> EntityRenderer for Renderer<'a> {
+impl EntityRenderer for WindowCanvas {
 
     fn draw_shape(&mut self, physics: &Physics, color: Color) {
         match physics.shape {
@@ -51,7 +51,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
 
     fn draw_player(&mut self, player: &Player, physics: &Physics) {
         self.set_draw_color(Color::RGB(0, 0, 255));
-        self.draw_line(physics.position.into(), player.looking_at.into()).expect("Draw didn't work");
+        self.draw_line(physics.position, player.looking_at).expect("Draw didn't work");
 
         self.draw_shape(physics, Color::RGB(0, 255, 0));
 
@@ -69,7 +69,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
     }
 
     fn draw_enemy(&mut self, enemy: &Enemy, physics: &Physics) {
-        self.filled_circle(physics.position.x as i16, physics.position.y as i16, enemy.inner_radius as i16, Color::RGB(255, 0, 0));
+        self.filled_circle(physics.position.x as i16, physics.position.y as i16, enemy.inner_radius as i16, Color::RGB(255, 0, 0)).expect("Draw didn't work");
 
         match physics.shape {
             Shape::Circle { radius } => {
@@ -82,7 +82,7 @@ impl<'a> EntityRenderer for Renderer<'a> {
                         let x = physics.position.x + draw_radius * angle.cos();
                         let y = physics.position.y + draw_radius * angle.sin();
 
-                        self.filled_circle(x.round() as i16, y.round() as i16, 3, Color::RGB(75, 162, 153));
+                        self.filled_circle(x.round() as i16, y.round() as i16, 3, Color::RGB(75, 162, 153)).expect("Draw didn't work");
                     }
                 }
             }

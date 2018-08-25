@@ -1,8 +1,7 @@
 use std::f32;
 
-use bullet::{Bullet, BulletType};
+use bullet::{BulletType};
 use entity::{Entity, Physics};
-use shape::Shape;
 
 const HEALTH_REGEN_PER_MS: f32 = 0.12 / 1000.0;
 
@@ -16,14 +15,15 @@ pub struct Enemy {
 
 impl Enemy {
     pub fn new(inner_radius: f32) -> Enemy {
-        Enemy { 
-            inner_radius: inner_radius, 
+        Enemy {
+            inner_radius: inner_radius,
             shield_health: [1.0; SHIELD_SLICES as usize]
         }
     }
+
     pub fn take_hit(&mut self, physics: &Physics, bullet: &Entity) {
         if bullet.bullet().bullet_type == BulletType::Boom {
-            
+
             let pos = bullet.physics.position - physics.position;
             let mut angle = pos.y.atan2(pos.x);
             if angle < 0.0 {
@@ -40,7 +40,7 @@ impl Enemy {
         }
     }
 
-    pub fn update(&mut self, physics: &mut Physics, player: &Entity, time_delta: u32) {
+    pub fn update(&mut self, time_delta: u32) {
         for shield_health in &mut self.shield_health {
             *shield_health = (*shield_health + HEALTH_REGEN_PER_MS * time_delta as f32).min(1.0);
         }
